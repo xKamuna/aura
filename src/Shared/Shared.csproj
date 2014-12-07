@@ -59,6 +59,7 @@
     <Compile Include="Mabi\Const\CombatPower.cs" />
     <Compile Include="Mabi\Const\Conditions.cs" />
     <Compile Include="Mabi\Const\CreatureStates.cs" />
+    <Compile Include="Mabi\Const\Direction.cs" />
     <Compile Include="Mabi\Const\Quests.cs" />
     <Compile Include="Mabi\Const\ReviveOptions.cs" />
     <Compile Include="Mabi\Const\Effects.cs" />

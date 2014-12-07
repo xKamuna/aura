@@ -365,17 +365,27 @@ namespace Aura.Channel.World.Dungeons
 		public void AddFloorUpProps()
 		{
 			float rotation = this.parseDoorPosition(Door.North);
+			float oppositeRotation = this.parseDoorPosition(Door.South);
 
 			if ((this.Doors & Door.EastExit) != 0)
+			{
 				rotation = this.parseDoorPosition(Door.East);
+				oppositeRotation = this.parseDoorPosition(Door.West);
+			}
 			else if ((this.Doors & Door.SouthExit) != 0)
+			{
 				rotation = this.parseDoorPosition(Door.South);
+				oppositeRotation = this.parseDoorPosition(Door.North);
+			}
 			else if ((this.Doors & Door.WestExit) != 0)
-				rotation = this.parseDoorPosition(Door.South);
+			{
+				rotation = this.parseDoorPosition(Door.West);
+				oppositeRotation = this.parseDoorPosition(Door.East);
+			}
 
 			if (this.Floor.Parent.EnableStatues)
 			{
-				Prop statue = this.AddProp(10035, "", "", "", "single", Center.X, Center.Y, rotation, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
+				Prop statue = this.AddProp(10035, "", "", "", "single", Center.X, Center.Y, oppositeRotation, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
 				//TODO: Save position.
 			}
 
@@ -581,24 +591,24 @@ namespace Aura.Channel.World.Dungeons
 		//Utility Methods
 		private float parseDoorPosition(Door pDoor)
 		{
-			var rotation = 4.712385f; //Default: North
+			var rotation = Direction.North; //Default: North
 
 			switch (pDoor)
 			{
 				case Door.East:
 				case Door.EastExit:
 				case Door.EastLocked:
-					rotation = 3.14159f;
+					rotation = Direction.East;
 					break;
 				case Door.South:
 				case Door.SouthExit:
 				case Door.SouthLocked:
-					rotation = 1.570795f;
+					rotation = Direction.South;
 					break;
 				case Door.West:
 				case Door.WestExit:
 				case Door.WestLocked:
-					rotation = 0f;
+					rotation = Direction.West;
 					break;
 			}
 

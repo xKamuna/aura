@@ -59,7 +59,7 @@ namespace Aura.Channel.World.Dungeons
 			//Set up props
 			long entryPropIndex = 0x00A0000000000000 + ((long)this.EntryRegion.Id << 32) + ((long)0x0001 << 16);
 
-			var leaveStatue = new Prop(entryPropIndex + 2, this.EntryRegion.Id, 3250, 3250);
+			var leaveStatue = new Prop(entryPropIndex + 2, "", "", 0, this.EntryRegion.Id, 3250, 3250, Direction.North);
 			leaveStatue.Behavior = new PropFunc(
 				(Creature pCreature, Prop pProp) =>
 				{
