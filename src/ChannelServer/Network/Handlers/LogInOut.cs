@@ -232,6 +232,17 @@ namespace Aura.Channel.Network.Handlers
 
 			Log.Info("'{0}' is closing the connection. Saving...", client.Account.Id);
 
+			// Remove from Dungeon if in Dungeon
+			var creature = client.GetControlledCreatureSafe();
+			if (creature != null)
+			{
+				var dungeon = ChannelServer.Instance.World.DungeonManager.FindDungeonByCreature(creature);
+				if (dungeon != null)
+				{
+					dungeon.RemovePlayer(creature, false);
+				}
+			}
+
 			client.CleanUp();
 
 			Send.ChannelDisconnectR(client);

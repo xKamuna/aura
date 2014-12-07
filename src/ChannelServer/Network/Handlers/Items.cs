@@ -16,6 +16,7 @@ using Aura.Shared.Mabi.Structs;
 using Aura.Shared.Network;
 using Aura.Shared.Util;
 using Aura.Channel.World.Inventory;
+using Aura.Channel.World.Dungeons;
 
 namespace Aura.Channel.Network.Handlers
 {
@@ -149,6 +150,11 @@ namespace Aura.Channel.Network.Handlers
 			{
 				Send.SystemMessage(creature, Localization.Get("Not enough space."));
 				creature.Inventory.Remove(item.OptionInfo.LinkedPocketId);
+			}
+			else
+			{
+				if (Enum.IsDefined(typeof(DungeonKey), item.Info.Id))
+					Send.Effect(creature, Effect.PickUpKey, item.Info.Id, item.Info.Color1, item.Info.Color2, item.Info.Color3);
 			}
 
 			Send.ItemPickUpR(creature, success);
