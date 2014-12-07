@@ -35,6 +35,7 @@ namespace Aura.Channel.Network.Sending
 				else if (p is bool) packet.PutByte((bool)p);
 				else if (p is short) packet.PutShort((short)p);
 				else if (p is int) packet.PutInt((int)p);
+				else if (p is uint) packet.PutUInt((uint)p);
 				else if (p is long) packet.PutLong((long)p);
 				else if (p is float) packet.PutFloat((float)p);
 				else if (p is string) packet.PutString((string)p);

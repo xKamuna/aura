@@ -85,7 +85,12 @@ namespace Aura.Channel.Network.Handlers
 			}
 			else
 			{
-				if (creature.GetPosition().InRange(prop.GetPosition(), 1500))
+				int propDistance = 1500;
+				if (creature.RegionId >= 10000 && creature.RegionId <= 20000)
+				{
+					propDistance = 3200; // Dungeon Doors
+				}
+				if (creature.GetPosition().InRange(prop.GetPosition(), propDistance))
 				{
 					if (prop.Behavior != null)
 					{

@@ -14,6 +14,7 @@ using Aura.Shared.Mabi.Structs;
 using Aura.Shared.Util;
 using Aura.Channel.Scripting;
 using Aura.Channel.World.Inventory;
+using Aura.Channel.World.Dungeons;
 
 namespace Aura.Channel.World.Entities
 {
@@ -1132,7 +1133,23 @@ namespace Aura.Channel.World.Entities
 					item.Info.Region = this.RegionId;
 					item.Info.X = dropPos.X;
 					item.Info.Y = dropPos.Y;
-					item.DisappearTime = DateTime.Now.AddSeconds(60);
+					if (Enum.IsDefined(typeof(DungeonKey), item.Info.Id) && this.RegionId >= 10000 && this.RegionId <= 20000)
+					{
+						Dungeon dg = ChannelServer.Instance.World.DungeonManager.FindDungeonByCreature(killer);
+						if (dg != null)
+						{
+							var floor = dg.GetFloorByRegion(killer.RegionId);
+							item.Info.Color1 = (uint)floor.GetKey();
+							floor.RemoveKey((int)item.Info.Color1);
+						}
+						// Don't remove this
+						item.DisappearTime = DateTime.MinValue;
+					}
+					else
+					{
+						//One Minute
+						item.DisappearTime = DateTime.Now.AddSeconds(60);
+					}
 
 					this.Region.AddItem(item);
 				}
