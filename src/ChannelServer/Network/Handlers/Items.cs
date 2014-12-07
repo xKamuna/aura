@@ -101,13 +101,12 @@ namespace Aura.Channel.Network.Handlers
 				return;
 			}
 
-			if (ChannelServer.Instance.World.DungeonManager.HandleDungeonDrop(creature, item))
-				return;
-
-			item.Drop(creature.Region, creature.GetPosition());
+			if (!ChannelServer.Instance.World.DungeonManager.HandleDungeonDrop(creature, item))
+			{
+				item.Drop(creature.Region, creature.GetPosition());
+			}
 
 			Send.ItemDropR(creature, true);
-
 			ChannelServer.Instance.Events.OnPlayerRemovesItem(creature, item.Info.Id, item.Info.Amount);
 		}
 

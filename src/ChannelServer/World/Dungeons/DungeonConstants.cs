@@ -86,8 +86,8 @@ namespace Aura.Channel.World.Dungeons
 		Beta = 0,
 
 		//Tir Chonaill
-		Alby,
-		AlbyHardMode,
+		Alby = 13,
+/*		AlbyHardMode,
 		Ciar,
 		CiarHardmode,
 		//Tir Na Nog
@@ -117,5 +117,6 @@ namespace Aura.Channel.World.Dungeons
 		Longa,
 		Maiz,
 		Par
+ */
 	}
 }

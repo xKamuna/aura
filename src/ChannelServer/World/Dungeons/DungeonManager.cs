@@ -103,7 +103,12 @@ namespace Aura.Channel.World.Dungeons
 
 		public bool HandleDungeonDrop(Creature pOrigin, Item pItem)
 		{
-			if (pOrigin.RegionId != 13)
+			if (!Enum.IsDefined(typeof(DungeonLobby), pOrigin.RegionId))
+				return false;
+
+			var pos = pOrigin.GetPosition();
+
+			if (!(pos.X >= 3000 && pos.X <= 3400 && pos.Y >= 3000 && pos.Y <= 3400))
 				return false;
 
 			if (this.StartDungeon(pOrigin, DungeonLobby.Alby, DungeonLevel.Normal, pItem))
