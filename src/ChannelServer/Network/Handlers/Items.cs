@@ -101,8 +101,8 @@ namespace Aura.Channel.Network.Handlers
 				return;
 			}
 
-			//if (HandleDungeonDrop(client, creature, item))
-			//    return;
+			if (ChannelServer.Instance.World.DungeonManager.HandleDungeonDrop(creature, item))
+				return;
 
 			item.Drop(creature.Region, creature.GetPosition());
 

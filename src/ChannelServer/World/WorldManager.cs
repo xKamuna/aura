@@ -13,12 +13,14 @@ using Aura.Channel.Util;
 using Aura.Channel.Network.Sending;
 using Aura.Shared.Network;
 using System.Threading.Tasks;
+using Aura.Channel.World.Dungeons;
 
 namespace Aura.Channel.World
 {
 	public class WorldManager
 	{
 		private Dictionary<int, Region> _regions;
+		public DungeonManager DungeonManager = new DungeonManager();
 
 		/// <summary>
 		/// Returns number of regions.

@@ -57,14 +57,23 @@ namespace Aura.Channel.World
 			_clients = new HashSet<ChannelClient>();
 
 			_regionData = AuraData.RegionInfoDb.Find(this.Id);
-			if (_regionData == null)
-			{
-				Log.Warning("Region: No data found for '{0}'.", this.Id);
-				return;
-			}
 
-			this.Collisions = new RegionCollision(_regionData.X1, _regionData.Y1, _regionData.X2, _regionData.Y2);
-			this.Collisions.Init(_regionData);
+			if (this.Id < 10000 && this.Id > 20000)
+			{
+				if (_regionData == null)
+				{
+					Log.Warning("Region: No data found for '{0}'.", this.Id);
+					return;
+				}
+
+				this.Collisions = new RegionCollision(_regionData.X1, _regionData.Y1, _regionData.X2, _regionData.Y2);
+				this.Collisions.Init(_regionData);
+			}
+			else
+			{
+				//Dungeon
+				this.Collisions = new RegionCollision(0, 0, 2400 * 7, 2400 * 7); //2400 = Dungeon room. 7 = grid size.
+			}
 
 			this.LoadClientProps();
 		}

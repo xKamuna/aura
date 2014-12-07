@@ -389,6 +389,7 @@ namespace Aura.Shared.Network
 		public const int UmbrellaLand = 0xA8E2;
 		public const int SetBgm = 0xA910;
 		public const int UnsetBgm = 0xA911;
+		public const int DungeonWarp = 0xA925;
 		public const int EnableRoyalAlchemist = 0xA9A3;
 		public const int SosButtonRequest = 0xA9A9;
 		public const int SosButtonRequestR = 0xA9AA;

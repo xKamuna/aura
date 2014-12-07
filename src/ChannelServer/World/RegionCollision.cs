@@ -62,6 +62,44 @@ namespace Aura.Channel.World
 		}
 
 		/// <summary>
+		/// Adds the given Rect to the colission tree
+		/// </summary>
+		/// <param name="p1"></param>
+		/// <param name="p2"></param>
+		/// <param name="p3"></param>
+		/// <param name="p4"></param>
+		public void AddRect(Point p1, Point p2, Point p3, Point p4)
+		{
+			this.AddLine(p1, p2);
+			this.AddLine(p2, p3);
+			this.AddLine(p3, p4);
+			this.AddLine(p4, p1);
+		}
+
+		/// <summary>
+		/// Adds the given triangle to the colission tree
+		/// </summary>
+		/// <param name="p1"></param>
+		/// <param name="p2"></param>
+		/// <param name="p3"></param>
+		public void AddTriangle(Point p1, Point p2, Point p3)
+		{
+			this.AddLine(p1, p2);
+			this.AddLine(p2, p3);
+			this.AddLine(p3, p1);
+		}
+
+		/// <summary>
+		/// Adds the given line to the colission tree
+		/// </summary>
+		/// <param name="p1"></param>
+		/// <param name="p2"></param>
+		public void AddLine(Point p1, Point p2)
+		{
+			_tree.Insert(new LinePath(p1, p2));
+		}
+
+		/// <summary>
 		/// Returns true if the path between from and to intersects with
 		/// anything and returns the intersection position via out.
 		/// </summary>

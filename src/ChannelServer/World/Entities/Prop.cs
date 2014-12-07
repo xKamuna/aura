@@ -68,6 +68,11 @@ namespace Aura.Channel.World.Entities
 			set { this.Info.Region = value; }
 		}
 
+		public Prop(long entityId, int region, int x, int y)
+			: this(entityId, "", "", 0, region, x, y, 0f)
+		{
+		}
+
 		public Prop(int id, int region, int x, int y, float direction, float scale = 1f, float altitude = 0)
 			: this("", "", "", id, region, x, y, direction, scale, altitude)
 		{
