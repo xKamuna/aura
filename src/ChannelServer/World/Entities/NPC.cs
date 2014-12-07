@@ -8,6 +8,7 @@ using Aura.Shared.Util;
 using Aura.Channel.Scripting;
 using System;
 using Aura.Channel.Network.Sending;
+using Aura.Channel.World.Dungeons;
 
 namespace Aura.Channel.World.Entities
 {
@@ -145,6 +146,14 @@ namespace Aura.Channel.World.Entities
 
 			if (killer == null)
 				return;
+
+			//Dungeon notify
+			if (this.RegionId >= 10000 && this.RegionId <= 20000)
+			{
+				Dungeon d = ChannelServer.Instance.World.DungeonManager.FindDungeonByCreature(killer);
+				if (d != null)
+					d.GetFloorByRegion(this.RegionId).NotifyKill(this, killer);
+			}
 
 			// Exp
 			var exp = (long)(this.RaceData.Exp * ChannelServer.Instance.Conf.World.ExpRate);
