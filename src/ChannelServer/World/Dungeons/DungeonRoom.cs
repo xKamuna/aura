@@ -523,6 +523,9 @@ namespace Aura.Channel.World.Dungeons
 						pProp.State = "open";
 						Send.PropUpdate(pProp);
 
+						// Play Sound
+						Send.PlaySound(pProp, "data/sound/chest_open.wav");
+
 						var pos = pProp.GetPosition();
 
 						var rnd = RandomProvider.Get();

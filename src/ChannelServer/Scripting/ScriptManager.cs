@@ -757,7 +757,10 @@ namespace Aura.Channel.Scripting
 
 			// Spawn effect
 			if (effect)
+			{
 				Send.SpawnEffect(SpawnEffect.Monster, creature.RegionId, x, y, creature, creature);
+				Send.PlaySound(creature, "data/sound/dungeon_monster_appear1.wav");
+			}
 
 			return creature;
 		}
