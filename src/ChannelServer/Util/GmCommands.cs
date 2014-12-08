@@ -275,6 +275,12 @@ namespace Aura.Channel.Util
 				if (y < 0) y = rndc.Y;
 			}
 
+			// Remove from existing dungeon
+			if (target.IsInDungeon)
+			{
+				target.Dungeon.RemovePlayer(target, false);
+			}
+
 			target.Warp(regionId, x, y);
 
 			if (sender != target)

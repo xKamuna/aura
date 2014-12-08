@@ -86,7 +86,7 @@ namespace Aura.Channel.Network.Handlers
 			else
 			{
 				int propDistance = 1500;
-				if (creature.RegionId >= 10000 && creature.RegionId <= 20000)
+				if (creature.IsInDungeon)
 				{
 					propDistance = 3200; // Dungeon Doors
 				}

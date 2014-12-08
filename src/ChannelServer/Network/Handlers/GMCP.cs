@@ -58,6 +58,13 @@ namespace Aura.Channel.Network.Handlers
 			}
 
 			var pos = creature.GetPosition();
+
+			if (target.IsInDungeon)
+			{
+				// Remove From Dungeon First
+				target.Dungeon.RemovePlayer(target, false);
+			}
+
 			target.Warp(creature.RegionId, pos.X, pos.Y);
 
 			Send.ServerMessage(target, Localization.Get("You've been summoned by '{0}'."), creature.Name);
@@ -86,7 +93,17 @@ namespace Aura.Channel.Network.Handlers
 			}
 
 			var pos = target.GetPosition();
-			creature.Warp(target.RegionId, pos.X, pos.Y);
+
+			if (target.IsInDungeon)
+			{
+				// Add to dungeon first
+				target.Dungeon.AddPlayer(creature, false);
+				target.Dungeon.FinishCustomWarp(creature, target.RegionId, pos.X, pos.Y);
+			}
+			else
+			{
+				creature.Warp(target.RegionId, pos.X, pos.Y);
+			}
 		}
 
 		/// <summary>

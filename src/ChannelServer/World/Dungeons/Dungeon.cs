@@ -87,12 +87,12 @@ namespace Aura.Channel.World.Dungeons
 			Log.Info("Next Available Region {0}", nextAvailableRegion);
 		}
 
-		public void AddPlayer(Creature pPlayer)
+		public void AddPlayer(Creature pPlayer, bool warp = true)
 		{
 			this.Players.Add(pPlayer);
 
-			if (_active)
-				this.WarpPlayerIn(pPlayer);
+			if (_active && warp)
+				this.WarpPlayerIn(pPlayer, warp);
 		}
 
 		public void RemovePlayer(Creature pPlayer, bool pWarp = true)
@@ -132,12 +132,22 @@ namespace Aura.Channel.World.Dungeons
 			_active = true;
 		}
 
-		public void WarpPlayerIn(Creature pPlayer)
+		public void WarpPlayerIn(Creature pPlayer, bool pSendWarp = true)
 		{
 			var pos = pPlayer.GetPosition();
 			Log.Info("Sending dungeon information...");
 			Send.CharacterLock(pPlayer, Locks.Default);
+			if (!pSendWarp)
+				return;
+
 			pPlayer.SetLocation(this.EntryRegion.Id, pos.X, pos.Y);
+			pPlayer.Warping = true;
+			Send.DungeonInfo(pPlayer, this);
+		}
+
+		public void FinishCustomWarp(Creature pPlayer, int regionId, int x, int y)
+		{
+			pPlayer.SetLocation(regionId, x, y);
 			pPlayer.Warping = true;
 			Send.DungeonInfo(pPlayer, this);
 		}

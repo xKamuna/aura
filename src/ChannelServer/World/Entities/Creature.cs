@@ -76,6 +76,23 @@ namespace Aura.Channel.World.Entities
 
 		public override int RegionId { get; set; }
 
+
+		public bool IsInDungeon
+		{
+			get
+			{
+				return (this.RegionId >= 10000 && this.RegionId <= 20000 && this.Dungeon != null);
+			}
+		}
+
+		public Dungeon Dungeon
+		{
+			get
+			{
+				return ChannelServer.Instance.World.DungeonManager.FindDungeonByCreature(this);
+			}
+		}
+
 		/// <summary>
 		/// Returns whether creature is able to receive exp and level up.
 		/// </summary>

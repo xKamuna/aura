@@ -148,11 +148,9 @@ namespace Aura.Channel.World.Entities
 				return;
 
 			// Dungeon notify
-			if (this.RegionId >= 10000 && this.RegionId <= 20000)
+			if (killer.IsInDungeon)
 			{
-				Dungeon d = ChannelServer.Instance.World.DungeonManager.FindDungeonByCreature(killer);
-				if (d != null)
-					d.GetFloorByRegion(this.RegionId).NotifyKill(this, killer);
+				killer.Dungeon.GetFloorByRegion(this.RegionId).NotifyKill(this, killer);
 			}
 
 			// Exp
