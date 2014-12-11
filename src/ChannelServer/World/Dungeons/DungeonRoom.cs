@@ -514,40 +514,89 @@ namespace Aura.Channel.World.Dungeons
 			//Chest
 			{
 				//TODO: Compass Directions
-				Prop rewardChest = this.AddProp(10201, "", "", "", "closed_identified", Center.X, Center.Y + 540, 1.570796f);
-				rewardChest.Behavior = new PropFunc(
-					(Creature pCreature, Prop pProp) =>
+				var chestCount = this.Floor.Parent.Creators.Count;
+				var positions = new List<Tuple<int, int>>();
+				var rand = RandomProvider.Get();
+				Console.WriteLine("Adding {0} Chests..." + chestCount);
+
+				for (var i = 0; i < chestCount && i < 8; i++)
+				{
+					Console.WriteLine("Adding chest...");
+					var position = Tuple.Create(540 * rand.Next(-1, 1), 540 * rand.Next(-1, 1));
+
+					while (positions.Contains(position) && !(position.Item1 == 0 && position.Item2 == 0))
 					{
-						if (pCreature.Inventory.Count((int)DungeonKey.Chest) < 0)
+						position = Tuple.Create(540 * rand.Next(-1, 1), 540 * rand.Next(-1, 1));
+					}
+
+					float direction = 0;
+					bool has_direction = false;
+
+					if (position.Item2 < 0)
+					{
+						direction = Direction.South;
+						has_direction = true;
+					}
+
+					if(position.Item2 > 0)
+					{
+						direction = Direction.North;
+						has_direction = true;
+					}
+
+					if(position.Item1 < 0)
+					{
+						direction += Direction.West;
+						if (has_direction)
 						{
-							Send.Notice(pCreature, NoticeType.MiddleSystem, "There is no matching key.");
-							return;
+							direction = direction / 2;
 						}
-						pCreature.Inventory.Remove((int)DungeonKey.Chest, 1);
-						//TODO: Set player variable to prevent reward keys from being used for other chests.
-						pProp.State = "open";
-						Send.PropUpdate(pProp);
+					}
 
-						// Play Sound
-						Send.PlaySound(pProp, "data/sound/chest_open.wav");
-
-						var pos = pProp.GetPosition();
-
-						var rnd = RandomProvider.Get();
-						//Drop rewards
-						foreach (var drop in Floor.Parent.Script.GetRewards())
+					if(position.Item1 > 0)
+					{
+						direction += Direction.East;
+						if (has_direction)
 						{
-							if (rnd.Next(100) <= drop.Chance)
+							direction = direction / 2;
+						}
+					}
+
+					Prop rewardChest = this.AddProp(10201, "", "", "", "closed_identified", Center.X + position.Item1, Center.Y + position.Item2, direction);
+					rewardChest.Behavior = new PropFunc(
+						(Creature pCreature, Prop pProp) =>
+						{
+							if (pCreature.Inventory.Count((int)DungeonKey.Chest) <= 0)
 							{
-								Item item = drop;
-								var amount = rnd.Next(drop.Minimum, drop.Maximum);
-								item.Info.Amount = (ushort)amount;
-								item.Info.X = (pos.X + rnd.Next(-50, 51));
-								item.Info.Y = (pos.Y + rnd.Next(-50, 51));
-								this.Floor.Region.DropItem(item, item.Info.X, item.Info.Y);
+								Send.Notice(pCreature, NoticeType.MiddleSystem, "There is no matching key.");
+								return;
 							}
-						}
-					});
+							pCreature.Inventory.Remove((int)DungeonKey.Chest, 1);
+							//TODO: Set player variable to prevent reward keys from being used for other chests.
+							pProp.State = "open";
+							Send.PropUpdate(pProp);
+
+							// Play Sound
+							Send.PlaySound(pProp, "data/sound/chest_open.wav");
+
+							var pos = pProp.GetPosition();
+
+							var rnd = RandomProvider.Get();
+							//Drop rewards
+							foreach (var drop in Floor.Parent.Script.GetRewards())
+							{
+								if (rnd.Next(100) <= drop.Chance)
+								{
+									Item item = drop;
+									var amount = rnd.Next(drop.Minimum, drop.Maximum);
+									item.Info.Amount = (ushort)amount;
+									item.Info.X = (pos.X + rnd.Next(-50, 51));
+									item.Info.Y = (pos.Y + rnd.Next(-50, 51));
+									this.Floor.Region.DropItem(item, item.Info.X, item.Info.Y);
+								}
+							}
+						});
+				}
 			}
 			//Exit Statue
 			{
