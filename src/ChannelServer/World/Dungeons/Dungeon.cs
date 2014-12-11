@@ -13,7 +13,7 @@ namespace Aura.Channel.World.Dungeons
 	public class Dungeon
 	{
 
-		private Dictionary<Creature, Tuple<string, string>> _vars = new Dictionary<Creature, Tuple<string, string>>();
+		private Dictionary<Creature, Dictionary<string, string>> _vars = new Dictionary<Creature, Dictionary<string, string>>();
 		private DungeonScript _script;
 		private bool _active = false;
 
@@ -66,7 +66,7 @@ namespace Aura.Channel.World.Dungeons
 					this.RemovePlayer(pCreature);
 				});
 
-			var moveDownProp = new Prop(entryPropIndex + 3, this.EntryRegion.Id, 3250, 4500);
+			var moveDownProp = new Prop(entryPropIndex + 3,"", "",0, this.EntryRegion.Id, 3250, 4500, Direction.North);
 			moveDownProp.Behavior = new PropFunc(
 				(Creature pCreature, Prop pProp) =>
 				{
@@ -90,6 +90,7 @@ namespace Aura.Channel.World.Dungeons
 		public void AddPlayer(Creature pPlayer, bool warp = true)
 		{
 			this.Players.Add(pPlayer);
+			_vars.Add(pPlayer, new Dictionary<string, string>());
 
 			if (_active && warp)
 				this.WarpPlayerIn(pPlayer, warp);
@@ -99,6 +100,9 @@ namespace Aura.Channel.World.Dungeons
 		{
 			if (!this.Players.Contains(pPlayer))
 				return;
+
+			// Remove from player variables
+			_vars.Remove(pPlayer);
 
 			//Remove Keys...
 			List<Item> toRemove = new List<Item>();
@@ -202,6 +206,40 @@ namespace Aura.Channel.World.Dungeons
 		public DungeonFloor GetFloorByRegion(int pRegionId)
 		{
 			return this.Floors.FirstOrDefault(a => a.Region.Id == pRegionId);
+		}
+
+		public void SetPlayerVariable(Creature pCreature, string pKey, string pValue)
+		{
+			if(!_vars.ContainsKey(pCreature)){
+				return;
+			}
+
+			var dictionary = _vars[pCreature];
+			if (dictionary.ContainsKey(pKey))
+			{
+				dictionary[pKey] = pValue;
+			}
+			else
+			{
+				dictionary.Add(pKey, pValue);
+			}
+		}
+
+		public string GetPlayerVariable(Creature pCreature, string pKey)
+		{
+			if (!_vars.ContainsKey(pCreature))
+			{
+				return null;
+			}
+
+			var dictionary = _vars[pCreature];
+
+			if (dictionary.ContainsKey(pKey))
+			{
+				return dictionary[pKey];
+			}
+
+			return null;
 		}
 
 		public void Cleared()

@@ -60,7 +60,21 @@ namespace Aura.Channel.Network.Handlers
 			// ...
 
 			var menu = new CreatureDeadMenu();
-			menu.Add(ReviveOptions.HereNoPenalty);
+
+			if (creature.IsInDungeon)
+			{
+				menu.Add(ReviveOptions.DungeonEntrance);
+				menu.Add(ReviveOptions.Town);
+				if (creature.Dungeon.GetPlayerVariable(creature, "last_statue") != null)
+				{
+					menu.Add(ReviveOptions.StatueOfGoddess);
+				}
+				menu.Add(ReviveOptions.WaitForRescue);
+			}
+			else
+			{
+				menu.Add(ReviveOptions.HereNoPenalty);
+			}
 
 			Send.DeadMenuR(creature, menu);
 		}
@@ -90,8 +104,39 @@ namespace Aura.Channel.Network.Handlers
 			}
 
 			// ...
+			switch (option)
+			{
+				case ReviveOptions.Town:
+					// TODO: Impliment Revive at nearest town saving. Fallback to remove player
+				case ReviveOptions.DungeonEntrance:
+					if (creature.IsInDungeon)
+					{
+						creature.Dungeon.RemovePlayer(creature);						
+					}
 
-			creature.Revive();
+					creature.Revive();
+					break;
+				case ReviveOptions.StatueOfGoddess:
+					if (creature.IsInDungeon)
+					{
+						String lastStatueFloor = creature.Dungeon.GetPlayerVariable(creature, "last_statue");
+						int floorId = -1;
+						int.TryParse(lastStatueFloor, out floorId);
+						if (floorId != -1)
+						{
+							creature.Revive();
+							var floor = creature.Dungeon.Floors[floorId];
+							creature.Warp(floor.Region.Id, floor.EntrancePosition.X, floor.EntrancePosition.Y);
+						}
+					}
+					break;
+				case ReviveOptions.WaitForRescue:
+					// TODO: Feather up. For now revive no penalty
+				case ReviveOptions.HereNoPenalty:
+				default:
+					creature.Revive();
+					break;
+			}
 		}
 	}
 }

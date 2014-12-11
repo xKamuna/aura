@@ -94,6 +94,12 @@ namespace Aura.Channel.Network.Handlers
 
 			var pos = target.GetPosition();
 
+			if (creature.IsInDungeon && target.RegionId != creature.RegionId)
+			{
+				creature.Dungeon.RemovePlayer(creature, false);
+				// Remove from current dungeon as players are in different dungeon
+			}
+
 			if (target.IsInDungeon)
 			{
 				// Add to dungeon first

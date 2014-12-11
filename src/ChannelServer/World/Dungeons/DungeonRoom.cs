@@ -386,7 +386,12 @@ namespace Aura.Channel.World.Dungeons
 			if (this.Floor.Parent.EnableStatues)
 			{
 				Prop statue = this.AddProp(10035, "", "", "", "single", Center.X, Center.Y, oppositeRotation, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
-				//TODO: Save position.
+				statue.Behavior = new PropFunc(
+					(Creature pCreature, Prop pProp) =>
+					{
+						this.Floor.Parent.SetPlayerVariable(pCreature, "last_statue", this.Floor.Index.ToString());
+						Send.Notice(pCreature, NoticeType.Middle, "Your location has been saved.");
+					});
 			}
 
 			Prop stairProp = this.AddProp(10024, "", "", "", "single", Center.X, Center.Y, rotation);
