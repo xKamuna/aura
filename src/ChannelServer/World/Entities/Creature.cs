@@ -15,6 +15,7 @@ using Aura.Shared.Util;
 using Aura.Channel.Scripting;
 using Aura.Channel.World.Inventory;
 using Aura.Channel.World.Dungeons;
+using Aura.Channel.Skills.Life;
 
 namespace Aura.Channel.World.Entities
 {
@@ -616,6 +617,16 @@ namespace Aura.Channel.World.Entities
 		{
 			this.Regens.Dispose();
 			ChannelServer.Instance.Events.MabiTick -= this.OnMabiTick;
+
+			// Stop rest, so character doesn't appear sitting anymore
+			// and chair props are removed.
+			// Do this in dispose because we can't expect a clean logout.
+			if (this.Has(CreatureStates.SitDown))
+			{
+				var restHandler = ChannelServer.Instance.SkillManager.GetHandler<RestSkillHandler>(SkillId.Rest);
+				if (restHandler != null)
+					restHandler.Stop(this, this.Skills.Get(SkillId.Rest));
+			}
 		}
 
 		public void Activate(CreatureStates state) { this.State |= state; }
