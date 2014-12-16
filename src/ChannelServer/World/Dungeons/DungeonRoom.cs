@@ -41,6 +41,8 @@ namespace Aura.Channel.World.Dungeons
 		public Puzzle Puzzle = Puzzle.None;
 		public SpawnPattern Spawns { get; set; }
 		public Door Doors = Door.None;
+		public Prop ExitStatue { get; set; }
+		public List<Prop> Chests = new List<Prop>();
 
 		private long _propIndex = 0x00A1000000000000;
 
@@ -524,7 +526,7 @@ namespace Aura.Channel.World.Dungeons
 					Console.WriteLine("Adding chest...");
 					var position = Tuple.Create(540 * rand.Next(-1, 1), 540 * rand.Next(-1, 1));
 
-					while (positions.Contains(position) && !(position.Item1 == 0 && position.Item2 == 0))
+					while (positions.Contains(position) || (position.Item1 == 0 && position.Item2 == 0))
 					{
 						position = Tuple.Create(540 * rand.Next(-1, 1), 540 * rand.Next(-1, 1));
 					}
@@ -538,13 +540,13 @@ namespace Aura.Channel.World.Dungeons
 						has_direction = true;
 					}
 
-					if(position.Item2 > 0)
+					if (position.Item2 > 0)
 					{
 						direction = Direction.North;
 						has_direction = true;
 					}
 
-					if(position.Item1 < 0)
+					if (position.Item1 < 0)
 					{
 						direction += Direction.West;
 						if (has_direction)
@@ -553,7 +555,7 @@ namespace Aura.Channel.World.Dungeons
 						}
 					}
 
-					if(position.Item1 > 0)
+					if (position.Item1 > 0)
 					{
 						direction += Direction.East;
 						if (has_direction)
@@ -596,18 +598,20 @@ namespace Aura.Channel.World.Dungeons
 								}
 							}
 						});
+					this.Chests.Add(rewardChest);
 				}
 			}
 			//Exit Statue
 			{
 				Prop statue = this.AddProp(10035, "", "", "<xml dungeon_name=\"" + this.Floor.Parent.Design + "\" dungeon_id=\"" + this.Floor.Parent.InstanceID + "\"/>", "single", Center.X, Center.Y, 4.712389f);
-
 				statue.Behavior = new PropFunc(
 					(Creature pCreature, Prop pProp) =>
 					{
 						this.Floor.Parent.RemovePlayer(pCreature);
 					}
 					);
+
+				this.ExitStatue = statue;
 			}
 		}
 

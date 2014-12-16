@@ -9,6 +9,7 @@ using Aura.Channel.World.Entities;
 using Aura.Shared.Network;
 using Aura.Channel.World;
 using Aura.Channel.Network.Sending.Helpers;
+using Aura.Channel.World.Dungeons;
 
 namespace Aura.Channel.Network.Sending
 {
@@ -54,6 +55,38 @@ namespace Aura.Channel.Network.Sending
 			packet.PutByte(true);
 
 			creature.Client.Send(packet);
+		}
+
+		/// <summary>
+		/// Broadcasts the PropInteraction update to the region
+		/// </summary>
+		/// <param name="prop"></param>
+		/// <param name="type"></param>
+		/// <param name="content"></param>
+		public static void PropInteraction(Prop prop, string type, string content)
+		{
+			var packet = new Packet(Op.PropInteraction, prop.EntityId);
+			
+			packet.PutInt(202); // Seems to be linked to area event change?
+			packet.PutInt(1100); // No Idea
+			packet.PutString(type); // directed_ask(2, 2);
+			packet.PutByte(2); // Interaction type?
+			packet.PutString(content);
+
+			prop.Region.Broadcast(packet);
+		}
+
+		public static void PropInteraction(Prop prop, string type, string content, Dungeon d)
+		{
+			var packet = new Packet(Op.PropInteraction, prop.EntityId);
+
+			packet.PutInt(202); // Seems to be linked to area event change?
+			packet.PutInt(1100); // No Idea
+			packet.PutString(type); // directed_ask(2, 2);
+			packet.PutByte(2); // Interaction type?
+			packet.PutString(content);
+
+			d.Broadcast(packet);
 		}
 
 		/// <summary>

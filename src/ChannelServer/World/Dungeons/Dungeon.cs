@@ -2,6 +2,7 @@
 using Aura.Channel.Scripting.Scripts;
 using Aura.Channel.World.Entities;
 using Aura.Shared.Mabi.Const;
+using Aura.Shared.Network;
 using Aura.Shared.Util;
 using System;
 using System.Collections.Generic;
@@ -170,6 +171,14 @@ namespace Aura.Channel.World.Dungeons
 			Send.EnterRegion(pPlayer as PlayerCreature);
 		}
 
+		public void Broadcast(Packet p)
+		{
+			foreach (var player in this.Players)
+			{
+				player.Client.Send(p);
+			}
+		}
+
 		public void Build()
 		{
 			_script.Build();
@@ -253,6 +262,14 @@ namespace Aura.Channel.World.Dungeons
 				var bossFloor = this.Floors[this.Floors.Count - 1];
 				bossFloor.BossRoom.OpenAllDoors();
 				bossFloor.Exit.OpenAllDoors();
+			}
+
+			var exit = this.Floors[this.Floors.Count - 1].Exit;			
+			// Exit Statue
+			Send.PropInteraction(exit.ExitStatue, "directed_ask(" + exit.X + ", " + exit.Y + ");", "message:s:Do you really want to leave the dungeon?", this);
+			// Reward Chests
+			foreach (var chest in exit.Chests){
+				Send.PropInteraction(chest, "directed_ask(" + exit.X + ", " + exit.Y + ");", "message:s:Do you want to open this chest?", this);
 			}
 		}
 
