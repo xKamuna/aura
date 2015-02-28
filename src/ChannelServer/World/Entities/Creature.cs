@@ -2,6 +2,7 @@
 // For more information, see license file in the main folder
 
 using System;
+using System.Linq;
 using System.Text;
 using Aura.Channel.Network;
 using Aura.Channel.Network.Sending;
@@ -16,6 +17,7 @@ using Aura.Channel.Scripting;
 using Aura.Channel.World.Inventory;
 using Aura.Channel.World.Dungeons;
 using Aura.Channel.Skills.Life;
+using System.Collections.Generic;
 
 namespace Aura.Channel.World.Entities
 {
@@ -98,6 +100,12 @@ namespace Aura.Channel.World.Entities
 		/// Returns whether creature is able to receive exp and level up.
 		/// </summary>
 		public virtual bool LevelingEnabled { get { return false; } }
+
+		/// <summary>
+		/// Returns whether creature is able to learn skills automatically
+		/// (e.g. Counterattack).
+		/// </summary>
+		public virtual bool LearningSkillsEnabled { get { return false; } }
 
 		// Look
 		// ------------------------------------------------------------------
@@ -243,11 +251,13 @@ namespace Aura.Channel.World.Entities
 		public bool IsDead { get { return this.Has(CreatureStates.Dead); } }
 		public bool IsStunned { get { return (this.Stun > 0); } }
 
+		public bool WasKnockedBack { get; set; }
+
 		// Stats
 		// ------------------------------------------------------------------
 
 		public short Level { get; set; }
-		public int LevelTotal { get; set; }
+		public int TotalLevel { get; set; }
 		public long Exp { get; set; }
 
 		public short Age { get; set; }
@@ -369,7 +379,7 @@ namespace Aura.Channel.World.Entities
 			}
 		}
 
-		public int WAttackMinBase
+		public int InjuryMinBaseMod
 		{
 			get
 			{
@@ -377,10 +387,10 @@ namespace Aura.Channel.World.Entities
 
 				if (this.RightHand != null)
 				{
-					result = this.RightHand.OptionInfo.WAttackMin;
+					result = this.RightHand.OptionInfo.InjuryMin;
 					if (this.LeftHand != null)
 					{
-						result += this.LeftHand.OptionInfo.WAttackMin;
+						result += this.LeftHand.OptionInfo.InjuryMin;
 						result /= 2; // average
 					}
 				}
@@ -389,7 +399,7 @@ namespace Aura.Channel.World.Entities
 			}
 		}
 
-		public int WAttackMaxBase
+		public int InjuryMaxBaseMod
 		{
 			get
 			{
@@ -397,10 +407,10 @@ namespace Aura.Channel.World.Entities
 
 				if (this.RightHand != null)
 				{
-					result = this.RightHand.OptionInfo.WAttackMax;
+					result = this.RightHand.OptionInfo.InjuryMax;
 					if (this.LeftHand != null)
 					{
-						result += this.LeftHand.OptionInfo.WAttackMax;
+						result += this.LeftHand.OptionInfo.InjuryMax;
 						result /= 2; // average
 					}
 				}
@@ -623,7 +633,7 @@ namespace Aura.Channel.World.Entities
 			// Do this in dispose because we can't expect a clean logout.
 			if (this.Has(CreatureStates.SitDown))
 			{
-				var restHandler = ChannelServer.Instance.SkillManager.GetHandler<RestSkillHandler>(SkillId.Rest);
+				var restHandler = ChannelServer.Instance.SkillManager.GetHandler<Rest>(SkillId.Rest);
 				if (restHandler != null)
 					restHandler.Stop(this, this.Skills.Get(SkillId.Rest));
 			}
@@ -666,7 +676,7 @@ namespace Aura.Channel.World.Entities
 			var rnd = RandomProvider.Get();
 			var pos = entity.GetPosition();
 			var target = pos.GetRandomInRange(range, rnd);
-			var dir = (byte)rnd.Next(255);
+			var dir = (byte)rnd.Next(256);
 
 			this.SetLocation(entity.RegionId, target.X, target.Y);
 			this.Direction = dir;
@@ -783,6 +793,81 @@ namespace Aura.Channel.World.Entities
 		/// </summary>
 		/// <param name="time"></param>
 		public void OnMabiTick(ErinnTime time)
+		{
+			this.UpdateBody();
+			this.EquipmentDecay();
+		}
+
+		/// <summary>
+		/// Called regularly to reduce equipments durability.
+		/// </summary>
+		/// <remarks>
+		/// http://wiki.mabinogiworld.com/view/Durability#Per_Tick
+		/// The loss actually doesn't seem to be fixed, I've logged
+		/// varying values on NA. However, *most* of the time the
+		/// values below are used.
+		/// </remarks>
+		private void EquipmentDecay()
+		{
+			if (ChannelServer.Instance.Conf.World.NoDurabilityLoss)
+				return;
+
+			var equipment = this.Inventory.ActualEquipment.ToList();
+			var update = new List<Item>();
+			var loss = 0;
+
+			foreach (var item in equipment.Where(a => a.Durability > 0))
+			{
+				switch (item.Info.Pocket)
+				{
+					case Pocket.Head: loss = 3; break;
+					case Pocket.Armor: loss = 16; break; // 6
+					case Pocket.Shoe: loss = 14; break; // 13
+					case Pocket.Glove: loss = 10; break; // 9
+					case Pocket.Robe: loss = 10; break;
+
+					case Pocket.RightHand1:
+						if (this.Inventory.WeaponSet != WeaponSet.First)
+							continue;
+						loss = 3;
+						break;
+					case Pocket.RightHand2:
+						if (this.Inventory.WeaponSet != WeaponSet.Second)
+							continue;
+						loss = 3;
+						break;
+
+					case Pocket.LeftHand1:
+						if (this.Inventory.WeaponSet != WeaponSet.First)
+							continue;
+						loss = 6;
+						break;
+					case Pocket.LeftHand2:
+						if (this.Inventory.WeaponSet != WeaponSet.Second)
+							continue;
+						loss = 6;
+						break;
+
+					default:
+						continue;
+				}
+
+				// Half dura loss if blessed
+				if (item.IsBlessed)
+					loss = Math.Max(1, loss / 2);
+
+				item.Durability -= loss;
+				update.Add(item);
+			}
+
+			if (update.Count != 0)
+				Send.ItemDurabilityUpdate(this, update);
+		}
+
+		/// <summary>
+		/// Called regularly to update body, based on what the creature ate.
+		/// </summary>
+		private void UpdateBody()
 		{
 			var weight = this.Temp.WeightFoodChange;
 			var upper = this.Temp.UpperFoodChange;
@@ -1150,14 +1235,29 @@ namespace Aura.Channel.World.Entities
 			}
 
 			// Drops
+			var dropped = new HashSet<int>();
 			foreach (var drop in this.Drops.Drops)
 			{
+				// Only drop any item once
+				if (dropped.Contains(drop.ItemId))
+					continue;
+
 				if (rnd.NextDouble() < drop.Chance * ChannelServer.Instance.Conf.World.DropRate)
 				{
 					var dropPos = pos.GetRandomInRange(50, rnd);
 
 					var item = new Item(drop.ItemId);
-					item.Info.Amount = 1;
+
+					item.Info.Amount = (ushort)drop.Amount;
+					item.OptionInfo.Prefix = (ushort)drop.Prefix;
+					item.OptionInfo.Suffix = (ushort)drop.Suffix;
+					if (drop.HasColor)
+					{
+						item.Info.Color1 = drop.Color1;
+						item.Info.Color2 = drop.Color2;
+						item.Info.Color3 = drop.Color3;
+					}
+
 					item.Info.Region = this.RegionId;
 					item.Info.X = dropPos.X;
 					item.Info.Y = dropPos.Y;
@@ -1180,6 +1280,8 @@ namespace Aura.Channel.World.Entities
 					}
 
 					this.Region.AddItem(item);
+
+					dropped.Add(drop.ItemId);
 				}
 			}
 		}
@@ -1210,6 +1312,7 @@ namespace Aura.Channel.World.Entities
 			while (this.Level < AuraData.ExpDb.MaxLevel && this.Exp >= AuraData.ExpDb.GetTotalForNextLevel(this.Level))
 			{
 				this.Level++;
+				this.TotalLevel++;
 
 				if (levelStats == null)
 					continue;
@@ -1249,7 +1352,7 @@ namespace Aura.Channel.World.Entities
 				if ((diff = (this.WillBase - (int)will)) >= 1) Send.SimpleAcquireInfo(this, "will", diff);
 				if ((diff = (this.LuckBase - (int)luck)) >= 1) Send.SimpleAcquireInfo(this, "luck", diff);
 
-				//EventManager.CreatureEvents.OnCreatureLevelsUp(this);
+				ChannelServer.Instance.Events.OnCreatureLevelUp(this);
 			}
 			else
 				Send.StatUpdate(this, StatUpdateType.Private, Stat.Experience);
@@ -1341,6 +1444,63 @@ namespace Aura.Channel.World.Entities
 		public float GetCritChanceFor(Creature target)
 		{
 			return (this.CriticalBase - target.Protection);
+		}
+
+		/// <summary>
+		/// Returns Rest pose based on skill's rank.
+		/// </summary>
+		/// <returns></returns>
+		public byte GetRestPose()
+		{
+			byte pose = 0;
+
+			var skill = this.Skills.Get(SkillId.Rest);
+			if (skill != null)
+			{
+				if (skill.Info.Rank >= SkillRank.R9)
+					pose = 4;
+				// Deactivated until we know how to keep the pose up.
+				//if (skill.Info.Rank >= SkillRank.R1)
+				//	pose = 5;
+			}
+
+			return pose;
+		}
+
+		/// <summary>
+		/// Sets new position for target, based on attacker's position
+		/// and the distance, takes collision into consideration.
+		/// </summary>
+		/// <param name="target">Entity to be knocked back</param>
+		/// <param name="distance">Distance to knock back the target</param>
+		/// <returns>New position</returns>
+		public Position Shove(Creature target, int distance)
+		{
+			var attackerPosition = this.GetPosition();
+			var targetPosition = target.GetPosition();
+
+			var newPos = attackerPosition.GetRelative(targetPosition, distance);
+
+			Position intersection;
+			if (target.Region.Collisions.Find(targetPosition, newPos, out intersection))
+				newPos = targetPosition.GetRelative(intersection, -50);
+
+			target.SetPosition(newPos.X, newPos.Y);
+
+			return newPos;
+		}
+
+		/// <summary>
+		///  Returns true if creature's race data has the tag.
+		/// </summary>
+		/// <param name="tag"></param>
+		/// <returns></returns>
+		public override bool HasTag(string tag)
+		{
+			if (this.RaceData == null)
+				return false;
+
+			return this.RaceData.HasTag(tag);
 		}
 	}
 }

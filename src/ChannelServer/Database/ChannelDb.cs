@@ -53,6 +53,7 @@ namespace Aura.Channel.Database
 						account.AutobanCount = reader.GetInt32("autobanCount");
 						account.AutobanScore = reader.GetInt32("autobanScore");
 						account.LastAutobanReduction = reader.GetDateTimeSafe("lastAutobanReduction");
+						account.Bank.Gold = reader.GetInt32("bankGold");
 
 						// We don't need to decrease their score if it's already zero!
 						if (account.AutobanScore > 0 && ChannelServer.Instance.Conf.Autoban.ReductionTime.Ticks != 0)
@@ -73,6 +74,7 @@ namespace Aura.Channel.Database
 					}
 				}
 
+				// Read account variables
 				account.Vars.Perm = this.LoadVars(account.Id, 0);
 
 				// Characters
@@ -97,6 +99,7 @@ namespace Aura.Channel.Database
 							}
 						}
 					}
+
 				}
 				catch (Exception ex)
 				{
@@ -176,6 +179,7 @@ namespace Aura.Channel.Database
 			var character = new TCreature();
 			ushort title = 0, optionTitle = 0;
 			float lifeDelta = 0, manaDelta = 0, staminaDelta = 0;
+			int bankWidth = 12, bankHeight = 8;
 
 			using (var conn = this.Connection)
 			using (var mc = new MySqlCommand("SELECT * FROM `" + table + "` AS c INNER JOIN `creatures` AS cr ON c.creatureId = cr.creatureId WHERE `entityId` = @entityId", conn))
@@ -200,7 +204,7 @@ namespace Aura.Channel.Database
 					character.Height = reader.GetFloat("height");
 					character.Weight = reader.GetFloat("weight");
 					character.Upper = reader.GetFloat("upper");
-					character.Lower = reader.GetInt32("lower");
+					character.Lower = reader.GetFloat("lower");
 					character.Color1 = reader.GetUInt32("color1");
 					character.Color2 = reader.GetUInt32("color2");
 					character.Color3 = reader.GetUInt32("color3");
@@ -211,7 +215,7 @@ namespace Aura.Channel.Database
 					character.Direction = reader.GetByte("direction");
 					character.Inventory.WeaponSet = (WeaponSet)reader.GetByte("weaponSet");
 					character.Level = reader.GetInt16("level");
-					character.LevelTotal = reader.GetInt32("levelTotal");
+					character.TotalLevel = reader.GetInt32("levelTotal");
 					character.Exp = reader.GetInt64("exp");
 					character.AbilityPoints = reader.GetInt16("ap");
 					character.Age = reader.GetInt16("age");
@@ -249,6 +253,9 @@ namespace Aura.Channel.Database
 
 					title = reader.GetUInt16("title");
 					optionTitle = reader.GetUInt16("optionTitle");
+
+					bankWidth = reader.GetInt32("bankWidth");
+					bankHeight = reader.GetInt32("bankHeight");
 				}
 
 				character.LoadDefault();
@@ -261,12 +268,17 @@ namespace Aura.Channel.Database
 			this.GetCharacterSkills(character);
 			this.GetCharacterQuests(character);
 
+			// Add bank tab for characters
+			// TODO: Bank tabs for pets?
+			if (character.IsCharacter)
+				this.AddBankTabForCharacter(account, character, bankWidth, bankHeight);
+
 			// Add GM titles for the characters of authority 50+ accounts
 			if (account != null)
 			{
 				if (account.Authority >= 50) character.Titles.Add(60000, TitleState.Usable); // GM
 				if (account.Authority >= 99) character.Titles.Add(60001, TitleState.Usable); // devCAT
-				if (account.Authority >= 99) character.Titles.Add(60002, TitleState.Usable); // devDOG
+				//if (account.Authority >= 99) character.Titles.Add(60002, TitleState.Usable); // devDOG
 			}
 
 			// Init titles
@@ -295,6 +307,7 @@ namespace Aura.Channel.Database
 			foreach (var item in items.Where(a => a.OptionInfo.LinkedPocketId != Pocket.None))
 				character.Inventory.Add(new InventoryPocketNormal(item.OptionInfo.LinkedPocketId, item.Data.BagWidth, item.Data.BagHeight));
 
+			// Add items
 			foreach (var item in items)
 			{
 				// Ignore items that were in bags that don't exist anymore.
@@ -311,56 +324,142 @@ namespace Aura.Channel.Database
 		}
 
 		/// <summary>
+		/// Reads bank tab for character from db and adds it to account.
+		/// </summary>
+		/// <param name="account"></param>
+		/// <param name="character"></param>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
+		private void AddBankTabForCharacter(Account account, PlayerCreature character, int width, int height)
+		{
+			// Add tab
+			var race = character.IsHuman ? BankTabRace.Human : character.IsElf ? BankTabRace.Elf : BankTabRace.Giant;
+			account.Bank.AddTab(character.Name, race, width, height);
+
+			// Read bank items
+			var items = this.GetItems(character.CreatureId, true);
+			foreach (var item in items)
+			{
+				if (!account.Bank.InitAdd(character.Name, item))
+					Log.Error("AddBankTabFromCharacter: Unable to add item '{0}' ({1}) to bank tab '{2}'.", item.Info.Id, item.EntityId, character.Name);
+			}
+		}
+
+		/// <summary>
 		/// Returns list of items for creature with the given id.
 		/// </summary>
+		/// <remarks>
+		/// TODO: This should be refactored to read all items in one go,
+		///   instead of reading two or more separate lists.
+		///   1) Make it "ReadItem"
+		///   2) Handle the items in the actual item loading methods
+		/// </remarks>
 		/// <param name="creatureId"></param>
 		/// <returns></returns>
-		private List<Item> GetItems(long creatureId)
+		private List<Item> GetItems(long creatureId, bool bank = false)
 		{
 			var result = new List<Item>();
 
 			using (var conn = this.Connection)
-			// Sort descending by linkedPocket to get bags first, they have
-			// to be created before the items can be added.
-			using (var mc = new MySqlCommand("SELECT * FROM `items` WHERE `creatureId` = @creatureId ORDER BY `linkedPocket` DESC", conn))
 			{
-				mc.Parameters.AddWithValue("@creatureId", creatureId);
+				var query = "SELECT * FROM `items` WHERE `creatureId` = @creatureId";
 
-				using (var reader = mc.ExecuteReader())
+				// Filter bank items
+				if (bank)
+					query += " AND `pocket` = 0 AND `bank` IS NOT NULL";
+				else
+					query += " AND `pocket` != 0 AND `bank` IS NULL";
+
+				// Sort descending by linkedPocket to get bags first, they have
+				// to be created before the items can be added.
+				query += " ORDER BY `linkedPocket` DESC";
+
+				using (var mc = new MySqlCommand(query, conn))
 				{
-					while (reader.Read())
+					mc.Parameters.AddWithValue("@creatureId", creatureId);
+
+					using (var reader = mc.ExecuteReader())
 					{
-						var itemId = reader.GetInt32("itemId");
-						var entityId = reader.GetInt64("entityId");
+						while (reader.Read())
+						{
+							var itemId = reader.GetInt32("itemId");
+							var entityId = reader.GetInt64("entityId");
 
-						var item = new Item(itemId, entityId);
-						item.Info.Pocket = (Pocket)reader.GetInt32("pocket");
-						item.Info.X = reader.GetInt32("x");
-						item.Info.Y = reader.GetInt32("y");
-						item.Info.Color1 = reader.GetUInt32("color1");
-						item.Info.Color2 = reader.GetUInt32("color2");
-						item.Info.Color3 = reader.GetUInt32("color3");
-						item.Info.Amount = reader.GetUInt16("amount");
-						item.Info.State = reader.GetByte("state");
-						item.OptionInfo.Price = reader.GetInt32("price");
-						item.OptionInfo.SellingPrice = reader.GetInt32("sellPrice");
-						item.OptionInfo.Durability = reader.GetInt32("durability");
-						item.OptionInfo.DurabilityMax = reader.GetInt32("durabilityMax");
-						item.OptionInfo.DurabilityOriginal = reader.GetInt32("durabilityOriginal");
-						item.OptionInfo.AttackMin = reader.GetUInt16("attackMin");
-						item.OptionInfo.AttackMax = reader.GetUInt16("attackMax");
-						item.OptionInfo.Balance = reader.GetByte("balance");
-						item.OptionInfo.Critical = reader.GetByte("critical");
-						item.OptionInfo.Defense = reader.GetInt32("defense");
-						item.OptionInfo.Protection = reader.GetInt16("protection");
-						item.OptionInfo.EffectiveRange = reader.GetInt16("range");
-						item.OptionInfo.AttackSpeed = (AttackSpeed)reader.GetByte("attackSpeed");
-						item.OptionInfo.Experience = reader.GetInt16("experience");
-						item.MetaData1.Parse(reader.GetStringSafe("meta1"));
-						item.MetaData2.Parse(reader.GetStringSafe("meta2"));
-						item.OptionInfo.LinkedPocketId = (Pocket)reader.GetByte("linkedPocket");
+							var item = new Item(itemId, entityId);
+							item.Bank = reader.GetStringSafe("bank");
+							item.Info.Pocket = (Pocket)reader.GetInt32("pocket");
+							item.Info.X = reader.GetInt32("x");
+							item.Info.Y = reader.GetInt32("y");
+							item.Info.Color1 = reader.GetUInt32("color1");
+							item.Info.Color2 = reader.GetUInt32("color2");
+							item.Info.Color3 = reader.GetUInt32("color3");
+							item.Info.Amount = reader.GetUInt16("amount");
+							item.Info.State = reader.GetByte("state");
+							item.Info.FigureB = reader.GetByte("figureB");
+							item.OptionInfo.Price = reader.GetInt32("price");
+							item.OptionInfo.SellingPrice = reader.GetInt32("sellPrice");
+							item.OptionInfo.Durability = reader.GetInt32("durability");
+							item.OptionInfo.DurabilityMax = reader.GetInt32("durabilityMax");
+							item.OptionInfo.DurabilityOriginal = reader.GetInt32("durabilityOriginal");
+							item.OptionInfo.AttackMin = reader.GetUInt16("attackMin");
+							item.OptionInfo.AttackMax = reader.GetUInt16("attackMax");
+							item.OptionInfo.InjuryMin = reader.GetUInt16("injuryMin");
+							item.OptionInfo.InjuryMax = reader.GetUInt16("injuryMax");
+							item.OptionInfo.Balance = reader.GetByte("balance");
+							item.OptionInfo.Critical = reader.GetSByte("critical");
+							item.OptionInfo.Defense = reader.GetInt32("defense");
+							item.OptionInfo.Protection = reader.GetInt16("protection");
+							item.OptionInfo.EffectiveRange = reader.GetInt16("range");
+							item.OptionInfo.AttackSpeed = (AttackSpeed)reader.GetByte("attackSpeed");
+							item.Proficiency = reader.GetInt32("experience");
+							item.OptionInfo.Upgraded = reader.GetByte("upgrades");
+							item.MetaData1.Parse(reader.GetStringSafe("meta1"));
+							item.MetaData2.Parse(reader.GetStringSafe("meta2"));
+							item.OptionInfo.LinkedPocketId = (Pocket)reader.GetByte("linkedPocket");
+							item.OptionInfo.Flags = (ItemFlags)reader.GetByte("flags");
+							item.OptionInfo.Prefix = reader.GetUInt16("prefix");
+							item.OptionInfo.Suffix = reader.GetUInt16("suffix");
 
-						result.Add(item);
+							result.Add(item);
+						}
+					}
+				}
+
+				// Load ego data
+				using (var mc = new MySqlCommand("SELECT * FROM `egos` WHERE itemEntityId = @itemEntityId", conn))
+				{
+					foreach (var item in result.Where(item => item.Data.HasTag("/ego_weapon/")))
+					{
+						mc.Parameters.AddWithValue("@itemEntityId", item.EntityId);
+
+						using (var reader = mc.ExecuteReader())
+						{
+							if (!reader.Read())
+							{
+								Log.Warning("ChannelDb.GetItems: No ego data for '{0}'.", item.EntityIdHex);
+								continue;
+							}
+
+							item.EgoInfo.Race = (EgoRace)reader.GetByte("egoRace");
+							item.EgoInfo.Name = reader.GetStringSafe("name");
+							item.EgoInfo.StrLevel = reader.GetByte("strLevel");
+							item.EgoInfo.StrExp = reader.GetInt32("strExp");
+							item.EgoInfo.IntLevel = reader.GetByte("intLevel");
+							item.EgoInfo.IntExp = reader.GetInt32("intExp");
+							item.EgoInfo.DexLevel = reader.GetByte("dexLevel");
+							item.EgoInfo.DexExp = reader.GetInt32("dexExp");
+							item.EgoInfo.WillLevel = reader.GetByte("willLevel");
+							item.EgoInfo.WillExp = reader.GetInt32("willExp");
+							item.EgoInfo.LuckLevel = reader.GetByte("luckLevel");
+							item.EgoInfo.LuckExp = reader.GetInt32("luckExp");
+							item.EgoInfo.SocialLevel = reader.GetByte("socialLevel");
+							item.EgoInfo.SocialExp = reader.GetInt32("socialExp");
+							item.EgoInfo.AwakeningEnergy = reader.GetByte("awakeningEnergy");
+							item.EgoInfo.AwakeningExp = reader.GetInt32("awakeningExp");
+							item.EgoInfo.LastFeeding = reader.GetDateTimeSafe("lastFeeding");
+						}
+
+						mc.Parameters.Clear();
 					}
 				}
 			}
@@ -469,6 +568,8 @@ namespace Aura.Channel.Database
 			// hidden ones for now
 			// TODO: Move to race skill db.
 			character.Skills.Add(SkillId.CombatMastery, SkillRank.RF, character.Race);
+			// According to the Wiki you get Crit upon advancing CM to RF, should CM be Novice?
+			character.Skills.Add(SkillId.CriticalHit, SkillRank.Novice, character.Race);
 			if (character is Character)
 			{
 				character.Skills.Add(SkillId.HiddenEnchant, SkillRank.Novice, character.Race);
@@ -544,10 +645,11 @@ namespace Aura.Channel.Database
 							{
 								var uniqueId = reader.GetInt64("questIdUnique");
 								var id = reader.GetInt32("questId");
-								var state = (QuestState) reader.GetInt32("state");
+								var state = (QuestState)reader.GetInt32("state");
 								var itemEntityId = reader.GetInt64("itemEntityId");
+								var metaData = reader.GetStringSafe("metaData");
 
-								var quest = new Quest(id, uniqueId, state);
+								var quest = new Quest(id, uniqueId, state, metaData);
 
 								if (quest.State == QuestState.InProgress)
 								{
@@ -602,6 +704,45 @@ namespace Aura.Channel.Database
 						}
 					}
 				}
+				using (var mc = new MySqlCommand("SELECT * FROM `ptj` WHERE `creatureId` = @creatureId", conn))
+				{
+					mc.Parameters.AddWithValue("@creatureId", character.CreatureId);
+
+					using (var reader = mc.ExecuteReader())
+					{
+						while (reader.Read())
+						{
+							var type = (PtjType)reader.GetInt32("type");
+							var done = reader.GetInt32("done");
+							var success = reader.GetInt32("success");
+							var lastChange = reader.GetDateTimeSafe("lastChange");
+
+							// Reduce done by 1 for each day after the third
+							var daysSinceChange = (int)(DateTime.Now - lastChange).TotalDays;
+							var forgetDays = Math.Max(0, daysSinceChange - 3);
+
+							// Make NPCs "forget", cap at 1 job done
+							if (forgetDays > 0)
+							{
+								done = Math.Max(1, done - forgetDays);
+
+								// Set last change to 3 days ago, to keep forgetting,
+								// starting tomorrow.
+								lastChange = DateTime.Now.AddDays(-3);
+							}
+
+							// Adjust success
+							if (done < success)
+								success = done;
+
+							// Add record
+							var record = character.Quests.GetPtjTrackRecord(type);
+							record.Done = done;
+							record.Success = success;
+							record.LastChange = lastChange;
+						}
+					}
+				}
 			}
 		}
 
@@ -648,12 +789,27 @@ namespace Aura.Channel.Database
 					mc.ExecuteNonQuery();
 				}
 
-				// Add quests and progress
+				// Delete PTJ records
+				using (var mc = new MySqlCommand("DELETE FROM `ptj` WHERE `creatureId` = @creatureId", conn, transaction))
+				{
+					mc.Parameters.AddWithValue("@creatureId", character.CreatureId);
+					mc.ExecuteNonQuery();
+				}
+
+				// Add everything
 				foreach (var quest in character.Quests.GetList())
 				{
 					if (quest.State == QuestState.InProgress && !character.Inventory.Has(quest.QuestItem))
 					{
 						Log.Warning("Db.SaveQuests: Missing '{0}'s quest item for '{1}'.", character.Name, quest.Id);
+						continue;
+					}
+
+					// Don't save PTJs, fail them
+					if (quest.Data.Type == QuestType.Deliver)
+					{
+						if (quest.State != QuestState.Complete)
+							character.Quests.ModifyPtjTrackRecord(quest.Data.PtjType, +1, 0);
 						continue;
 					}
 
@@ -665,6 +821,7 @@ namespace Aura.Channel.Database
 						cmd.Set("questId", quest.Id);
 						cmd.Set("state", (int)quest.State);
 						cmd.Set("itemEntityId", (quest.State == QuestState.InProgress ? quest.QuestItem.EntityId : 0));
+						cmd.Set("metaData", quest.MetaData);
 
 						cmd.Execute();
 
@@ -684,6 +841,22 @@ namespace Aura.Channel.Database
 							cmd.Set("unlocked", objective.Unlocked);
 							cmd.Execute();
 						}
+					}
+				}
+
+				foreach (var record in character.Quests.GetPtjTrackRecords())
+				{
+					if (record.Done == 0)
+						continue;
+
+					using (var cmd = new InsertCommand("INSERT INTO `ptj` {0}", conn, transaction))
+					{
+						cmd.Set("creatureId", character.CreatureId);
+						cmd.Set("type", (int)record.Type);
+						cmd.Set("done", record.Done);
+						cmd.Set("success", record.Success);
+						cmd.Set("lastChange", record.LastChange);
+						cmd.Execute();
 					}
 				}
 
@@ -708,6 +881,7 @@ namespace Aura.Channel.Database
 				cmd.Set("autobanCount", account.AutobanCount);
 				cmd.Set("autobanScore", account.AutobanScore);
 				cmd.Set("lastAutobanReduction", account.LastAutobanReduction);
+				cmd.Set("bankGold", account.Bank.Gold);
 
 				cmd.Execute();
 			}
@@ -755,7 +929,7 @@ namespace Aura.Channel.Database
 				cmd.Set("staminaMax", creature.StaminaMaxBase);
 				cmd.Set("hunger", creature.Hunger);
 				cmd.Set("level", creature.Level);
-				cmd.Set("levelTotal", creature.LevelTotal);
+				cmd.Set("levelTotal", creature.TotalLevel);
 				cmd.Set("exp", creature.Exp);
 				cmd.Set("str", creature.StrBase);
 				cmd.Set("dex", creature.DexBase);
@@ -879,7 +1053,8 @@ namespace Aura.Channel.Database
 					mc.ExecuteNonQuery();
 				}
 
-				foreach (var item in creature.Inventory.Items)
+				var items = creature.Inventory.Items.Union(creature.Client.Account.Bank.GetTabItems(creature.Name));
+				foreach (var item in items)
 				{
 					using (var cmd = new InsertCommand("INSERT INTO `items` {0}", conn, transaction))
 					{
@@ -887,6 +1062,7 @@ namespace Aura.Channel.Database
 						if (item.EntityId < MabiId.TmpItems)
 							cmd.Set("entityId", item.EntityId);
 						cmd.Set("itemId", item.Info.Id);
+						cmd.Set("bank", item.Bank);
 						cmd.Set("pocket", (byte)item.Info.Pocket);
 						cmd.Set("x", item.Info.X);
 						cmd.Set("y", item.Info.Y);
@@ -898,31 +1074,67 @@ namespace Aura.Channel.Database
 						cmd.Set("amount", item.Info.Amount);
 						cmd.Set("linkedPocket", item.OptionInfo.LinkedPocketId);
 						cmd.Set("state", item.Info.State);
+						cmd.Set("figureB", item.Info.FigureB);
 						cmd.Set("durability", item.OptionInfo.Durability);
 						cmd.Set("durabilityMax", item.OptionInfo.DurabilityMax);
 						cmd.Set("durabilityOriginal", item.OptionInfo.DurabilityOriginal);
 						cmd.Set("attackMin", item.OptionInfo.AttackMin);
 						cmd.Set("attackMax", item.OptionInfo.AttackMax);
+						cmd.Set("injuryMin", item.OptionInfo.InjuryMin);
+						cmd.Set("injuryMax", item.OptionInfo.InjuryMax);
 						cmd.Set("balance", item.OptionInfo.Balance);
 						cmd.Set("critical", item.OptionInfo.Critical);
 						cmd.Set("defense", item.OptionInfo.Defense);
 						cmd.Set("protection", item.OptionInfo.Protection);
 						cmd.Set("range", item.OptionInfo.EffectiveRange);
 						cmd.Set("attackSpeed", (byte)item.OptionInfo.AttackSpeed);
-						cmd.Set("experience", item.OptionInfo.Experience);
+						cmd.Set("experience", item.Proficiency);
+						cmd.Set("upgrades", item.OptionInfo.Upgraded);
 						cmd.Set("meta1", item.MetaData1.ToString());
 						cmd.Set("meta2", item.MetaData2.ToString());
+						cmd.Set("flags", (byte)item.OptionInfo.Flags);
+						cmd.Set("prefix", item.OptionInfo.Prefix);
+						cmd.Set("suffix", item.OptionInfo.Suffix);
 
 						cmd.Execute();
 
 						if (item.EntityId >= MabiId.TmpItems)
 							item.EntityId = cmd.LastId;
 					}
+
+					// Save ego data
+					if (item.Data.HasTag("/ego_weapon/"))
+					{
+						using (var cmd = new InsertCommand("INSERT INTO `egos` {0}", conn, transaction))
+						{
+							cmd.Set("itemEntityId", item.EntityId);
+							cmd.Set("egoRace", (byte)item.EgoInfo.Race);
+							cmd.Set("name", item.EgoInfo.Name);
+							cmd.Set("strLevel", item.EgoInfo.StrLevel);
+							cmd.Set("strExp", item.EgoInfo.StrExp);
+							cmd.Set("intLevel", item.EgoInfo.IntLevel);
+							cmd.Set("intExp", item.EgoInfo.IntExp);
+							cmd.Set("dexLevel", item.EgoInfo.DexLevel);
+							cmd.Set("dexExp", item.EgoInfo.DexExp);
+							cmd.Set("willLevel", item.EgoInfo.WillLevel);
+							cmd.Set("willExp", item.EgoInfo.WillExp);
+							cmd.Set("luckLevel", item.EgoInfo.LuckLevel);
+							cmd.Set("luckExp", item.EgoInfo.LuckExp);
+							cmd.Set("socialLevel", item.EgoInfo.SocialLevel);
+							cmd.Set("socialExp", item.EgoInfo.SocialExp);
+							cmd.Set("awakeningEnergy", item.EgoInfo.AwakeningEnergy);
+							cmd.Set("awakeningExp", item.EgoInfo.AwakeningExp);
+							cmd.Set("lastFeeding", item.EgoInfo.LastFeeding);
+
+							cmd.Execute();
+						}
+					}
 				}
 
 				transaction.Commit();
 			}
 		}
+
 		/// <summary>
 		/// Writes all of creature's skills to the database.
 		/// </summary>
@@ -1005,6 +1217,7 @@ namespace Aura.Channel.Database
 							case "d": vars[name] = double.Parse(val); break;
 							case "b": vars[name] = bool.Parse(val); break;
 							case "s": vars[name] = val; break;
+							case "dt": vars[name] = DateTime.Parse(val); break;
 							case "o":
 								var buffer = Convert.FromBase64String(val);
 								var bf = new BinaryFormatter();
@@ -1064,15 +1277,12 @@ namespace Aura.Channel.Database
 					else if (var.Value is double) type = "d";
 					else if (var.Value is bool) type = "b";
 					else if (var.Value is string) type = "s";
+					else if (var.Value is DateTime) type = "dt";
 					else type = "o";
 
 					// Get value
 					var val = string.Empty;
-					if (type != "o")
-					{
-						val = var.Value.ToString();
-					}
-					else
+					if (type == "o")
 					{
 						// Objects are serialized to a Base64 string,
 						// because we're storing as string for easier
@@ -1082,6 +1292,14 @@ namespace Aura.Channel.Database
 							bf.Serialize(ms, var.Value);
 							val = Convert.ToBase64String(ms.ToArray());
 						}
+					}
+					else if (type == "dt")
+					{
+						val = var.Value.ToString();
+					}
+					else
+					{
+						val = var.Value.ToString();
 					}
 
 					// Make sure value isn't too big for the mediumtext field

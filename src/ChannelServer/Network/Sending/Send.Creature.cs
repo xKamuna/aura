@@ -255,8 +255,8 @@ namespace Aura.Channel.Network.Sending
 
 						case Stat.AttackMinBaseMod: packet.PutShort((short)creature.AttackMinBaseMod); break;
 						case Stat.AttackMaxBaseMod: packet.PutShort((short)creature.AttackMaxBaseMod); break;
-						case Stat.WAttackMinBaseMod: packet.PutShort((short)creature.WAttackMinBase); break;
-						case Stat.WAttackMaxBaseMod: packet.PutShort((short)creature.WAttackMaxBase); break;
+						case Stat.InjuryMinBaseMod: packet.PutShort((short)creature.InjuryMinBaseMod); break;
+						case Stat.InjuryMaxBaseMod: packet.PutShort((short)creature.InjuryMaxBaseMod); break;
 						case Stat.AttackMinMod: packet.PutShort((short)creature.AttackMinMod); break;
 						case Stat.AttackMaxMod: packet.PutShort((short)creature.AttackMaxMod); break;
 
@@ -361,26 +361,16 @@ namespace Aura.Channel.Network.Sending
 		/// </summary>
 		/// <remarks>
 		/// The byte parameter is the rest post to use, 0 being the default.
-		/// It seems like the creature reverts to the default upon appearing
-		/// though. Maybe we're missing something in 5334.
-		/// Old Aura code:
-		/// <code>
-		/// var skill = this.Skills.Get(SkillConst.Rest);
-		/// if (skill == null)
-		///		return 0;
-		/// 
-		/// byte pose = 0;
-		/// if (skill.Rank >= SkillRank.R9)
-		///		pose = 4;
-		/// if (skill.Rank >= SkillRank.R1)
-		///		pose = 5;
-		/// </code>
+		/// To keep sitting in that position for others, even if they run
+		/// out of range, CreatureStateEx is required to be set (see Rest).
+		/// It's unknown which state is the one for Rest R1 though,
+		/// it might not be implemented at all yet.
 		/// </remarks>
 		/// <param name="creature"></param>
 		public static void SitDown(Creature creature)
 		{
 			var packet = new Packet(Op.SitDown, creature.EntityId);
-			packet.PutByte(0);
+			packet.PutByte(creature.GetRestPose());
 
 			creature.Region.Broadcast(packet, creature);
 		}

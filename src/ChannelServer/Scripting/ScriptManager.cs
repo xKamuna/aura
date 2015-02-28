@@ -126,27 +126,10 @@ namespace Aura.Channel.Scripting
 			}
 
 			// Read script list
-			var toLoad = new OrderedDictionary();
+			OrderedDictionary toLoad = null;
 			try
 			{
-				using (var fr = new FileReader(IndexPath))
-				{
-					foreach (var line in fr)
-					{
-						// Get script path for either user or system
-						var scriptPath = Path.Combine(UserIndexRoot, line);
-						if (!File.Exists(scriptPath))
-							scriptPath = Path.Combine(SystemIndexRoot, line);
-						if (!File.Exists(scriptPath))
-						{
-							Log.Warning("Script not found: {0}", line);
-							continue;
-						}
-
-						// Easiest way to get a unique, ordered list.
-						toLoad[line] = scriptPath;
-					}
-				}
+				toLoad = this.ReadScriptList(IndexPath);
 			}
 			catch (Exception ex)
 			{
@@ -158,7 +141,7 @@ namespace Aura.Channel.Scripting
 			int done = 0, loaded = 0;
 			foreach (string filePath in toLoad.Values)
 			{
-				var asm = this.Compile(filePath);
+				var asm = this.GetAssembly(filePath);
 				if (asm != null)
 				{
 					this.LoadScriptAssembly(asm, filePath);
@@ -179,6 +162,45 @@ namespace Aura.Channel.Scripting
 				Log.WriteLine();
 
 			Log.Info("Done loading {0} scripts (of {1}).", loaded, toLoad.Count);
+		}
+
+		/// <summary>
+		/// Returns list of script files loaded from scripts.txt.
+		/// </summary>
+		/// <param name="rootList"></param>
+		/// <returns></returns>
+		private OrderedDictionary ReadScriptList(string rootList)
+		{
+			var result = new OrderedDictionary();
+
+			using (var fr = new FileReader(rootList))
+			{
+				foreach (var line in fr)
+				{
+					// Get path to file relative to "x/scripts/".
+					var relative = Path.GetFullPath(line.File);
+					relative = relative.Replace(Path.GetFullPath(UserIndexRoot), "");
+					relative = relative.Replace(Path.GetFullPath(SystemIndexRoot), "");
+					relative = Path.GetDirectoryName(relative);
+
+					var fileName = Path.Combine(relative, line.Value).Replace("\\", "/");
+
+					// Get script path for either user or system
+					var scriptPath = Path.Combine(UserIndexRoot, fileName);
+					if (!File.Exists(scriptPath))
+						scriptPath = Path.Combine(SystemIndexRoot, fileName);
+					if (!File.Exists(scriptPath))
+					{
+						Log.Warning("Script not found: {0}", fileName);
+						continue;
+					}
+
+					// Easiest way to get a unique, ordered list.
+					result[fileName] = scriptPath;
+				}
+			}
+
+			return result;
 		}
 
 		/// <summary>
@@ -255,7 +277,7 @@ namespace Aura.Channel.Scripting
 					continue;
 				}
 
-				var asm = this.Compile(scriptPath);
+				var asm = this.GetAssembly(scriptPath);
 				if (asm != null)
 					this.LoadItemScriptAssembly(asm, entry.Id);
 
@@ -270,7 +292,7 @@ namespace Aura.Channel.Scripting
 
 			// Compile will update assembly if generated script was updated
 			//foreach (string filePath in )
-			var inlineAsm = this.Compile(tmpPath);
+			var inlineAsm = this.GetAssembly(tmpPath);
 			if (inlineAsm != null)
 				this.LoadItemScriptAssembly(inlineAsm);
 
@@ -295,11 +317,13 @@ namespace Aura.Channel.Scripting
 				{
 					var fileName = Path.GetFileNameWithoutExtension(filePath);
 
-					var asm = this.Compile(filePath);
+					var asm = this.GetAssembly(filePath);
 					if (asm != null)
 					{
+						var types = GetJITtedTypes(asm, filePath);
+
 						// Get first AiScript class and save the type
-						foreach (var type in asm.GetTypes().Where(a => a.IsSubclassOf(typeof(AiScript))))
+						foreach (var type in types.Where(a => a.IsSubclassOf(typeof(AiScript))))
 						{
 							_aiScripts[fileName] = type;
 							break;
@@ -357,28 +381,36 @@ namespace Aura.Channel.Scripting
 				return null;
 
 			var script = Activator.CreateInstance(type) as AiScript;
-			script.Creature = creature;
+			script.Attach(creature);
 
 			return script;
 		}
 
 		/// <summary>
-		///  Compiles script and returns the resulting assembly, or null.
+		/// Loads assembly for script, compiles it if necessary.
+		/// Returns null if there was a problem.
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		private Assembly Compile(string path)
+		private Assembly GetAssembly(string path)
 		{
 			if (!File.Exists(path))
 			{
-				Log.Error("Script '{0}' not found.", path);
+				Log.Error("File '{0}' not found.", path);
 				return null;
 			}
 
+			var ext = Path.GetExtension(path).TrimStart('.');
+
+			// Load dlls directly
+			if (ext == "dll")
+				return Assembly.LoadFrom(path);
+
+			// Try to compile other files
 			var outPath = this.GetCachePath(path);
 
 			Compiler compiler;
-			_compilers.TryGetValue(Path.GetExtension(path).TrimStart('.'), out compiler);
+			_compilers.TryGetValue(ext, out compiler);
 			if (compiler == null)
 			{
 				Log.Error("No compiler found for script '{0}'.", path);
@@ -433,29 +465,44 @@ namespace Aura.Channel.Scripting
 			return null;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <remarks>
+		/// TODO: We might want to stop loading if this is a problem,
+		/// scripts might depend on each other, which could lead to more
+		/// errors.
+		/// </remarks>
+		/// <param name="asm"></param>
+		/// <param name="filePath"></param>
+		/// <returns></returns>
 		private static IEnumerable<Type> GetJITtedTypes(Assembly asm, string filePath)
 		{
 			Type[] types;
 			try
 			{
 				types = asm.GetTypes();
-				foreach (var method in types.SelectMany(t => t.GetMethods(BindingFlags.DeclaredOnly |
-					BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)).Where(m => !m.IsAbstract))
-				{
+				foreach (var method in types.SelectMany(t => t.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)).Where(m => !m.IsAbstract && !m.ContainsGenericParameters))
 					RuntimeHelpers.PrepareMethod(method.MethodHandle);
-				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
 				// Happens if classes in source or other scripts change,
 				// i.e. a class name changes, or a parent class. Only
 				// fixable by recaching, so they can "sync" again.
 
-				Log.Error("GetJITtedTypes: Loading of one or multiple types in '{0}' failed, classes in this file won't be loaded. " +
-				"Restart your server to recompile the offending scripts. Delete your cache folder if this error persists.", filePath);
+				Log.Exception(ex, "GetJITtedTypes: Loading of one or multiple types in '{0}' failed, classes in this file won't be loaded. " +
+					"Restart your server to recompile the offending scripts. Delete your cache folder if this error persists.", filePath);
 
 				// Mark for recomp
-				new FileInfo(filePath).LastWriteTime = DateTime.Now;
+				try
+				{
+					new FileInfo(filePath).LastWriteTime = DateTime.Now;
+				}
+				catch
+				{
+					// Fails for DLLs, because they're loaded from where they are.
+				}
 
 				return Enumerable.Empty<Type>();
 			}
@@ -713,6 +760,7 @@ namespace Aura.Channel.Scripting
 			creature.Color3 = creature.RaceData.Color3;
 			creature.Height = creature.RaceData.Size;
 			creature.Life = creature.LifeMaxBase = creature.RaceData.Life;
+			creature.Mana = creature.ManaMaxBase = creature.RaceData.Mana;
 			creature.State = (CreatureStates)creature.RaceData.DefaultState;
 			creature.Direction = (byte)RandomProvider.Get().Next(256);
 

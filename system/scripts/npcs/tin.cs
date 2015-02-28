@@ -51,11 +51,8 @@ public class TinScript : NpcScript
 		
 		Msg("Was there something else you wanted to talk about?");
 		await StartConversation();
-	}
-	
-	public override void EndConversation()
-	{
-		Close("Go all the way to the right and you will find Tir Chonaill. <br/>I wish you the best of luck.<br/>Have a great journey. <br/>I'll see you around...");
+		
+		End("Go all the way to the right and you will find Tir Chonaill. <br/>I wish you the best of luck.<br/>Have a great journey. <br/>I'll see you around...");
 	}
 	
 	protected override async Task Keywords(string keyword)
@@ -207,7 +204,7 @@ public class TinSoulStreamScript : NpcScript
 		SetLocation(22, 6313, 5712);
 	}
 
-	protected override async Task Talk()
+	protected override async Task TalkPet()
 	{
 		Msg("Hi. <username/>.<br/>Nice to meet you..");
 		Msg("I wish you the best of luck with all that you do here in Erinn...<br/>See ya.", Button("End Conversation"));

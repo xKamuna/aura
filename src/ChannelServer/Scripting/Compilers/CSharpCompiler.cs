@@ -80,6 +80,7 @@ namespace Aura.Channel.Scripting.Compilers
 			add.Append("using Aura.Channel.Util;");
 			add.Append("using Aura.Channel.World.Entities;");
 			add.Append("using Aura.Channel.World;");
+			add.Append("using Aura.Channel.World.Quests;");
 			add.Append("using Aura.Channel;");
 			add.Append("using Aura.Data;");
 			add.Append("using Aura.Data.Database;");
@@ -98,12 +99,12 @@ namespace Aura.Channel.Scripting.Compilers
 				"$1yield break;",
 				RegexOptions.Compiled);
 
-			// Do|Call(<method_call>);
+			// Do(<method_call>);
 			// --> foreach(var __callResult in <method_call>) yield return __callResult;
 			// Loops through Enumerator returned by the method called and passes
 			// the results to the main Enumerator.
 			script = Regex.Replace(script,
-				@"([\{\}:;\t ])?(Call|Do)\s*\(([^;]*)\)\s*;",
+				@"([\{\}:;\t ])?(Do)\s*\(([^;]*)\)\s*;",
 				"$1foreach(var __callResult in $3) yield return __callResult;",
 				RegexOptions.Compiled);
 

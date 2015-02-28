@@ -19,22 +19,24 @@ namespace Aura.Channel.Skills.Magic
 	/// Var2: Max teleport distance
 	/// </remarks>
 	[Skill(SkillId.SilentMove)]
-	public class SilentMoveSkillHandler : IPreparable, IReadyable, ICompletable, ICancelable, IUseable
+	public class SilentMove : IPreparable, IReadyable, ICompletable, ICancelable, IUseable
 	{
 		// Buffer to compensate for using the skill while moving
 		private const int DistanceBuffer = 250;
 
-		public void Prepare(Creature creature, Skill skill, int castTime, Packet packet)
+		public bool Prepare(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillFlashEffect(creature);
-			Send.SkillPrepare(creature, skill.Info.Id, castTime);
+			Send.SkillPrepare(creature, skill.Info.Id, skill.GetCastTime());
 
-			creature.Skills.ActiveSkill = skill;
+			return true;
 		}
 
-		public void Ready(Creature creature, Skill skill, Packet packet)
+		public bool Ready(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillReady(creature, skill.Info.Id);
+
+			return true;
 		}
 
 		public void Complete(Creature creature, Skill skill, Packet packet)

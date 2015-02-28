@@ -7,7 +7,6 @@
 divert  "/user/scripts/scripts.txt"
 
 include "scripts_shops.txt"
-include "scripts_custom.txt"
 include "scripts_npcs.txt"
 include "scripts_others.txt"
 include "scripts_quests.txt"
@@ -16,3 +15,5 @@ include "scripts_warps.txt"
 include "scripts_dungeons.txt"
 
 //include "g2/scripts.txt"
+include "scripts_generations.txt"
+include "scripts_custom.txt"

@@ -9,6 +9,7 @@ using Aura.Channel.Util;
 using Aura.Shared.Mabi;
 using Aura.Channel.World.Entities;
 using Aura.Channel.Skills;
+using Aura.Data.Database;
 
 namespace Aura.Channel.World
 {
@@ -140,6 +141,18 @@ namespace Aura.Channel.World
 		/// </summary>
 		public event Action<TargetAction> CreatureAttack;
 		public void OnCreatureAttack(TargetAction action) { CreatureAttack.Raise(action); }
+
+		/// <summary>
+		/// Raised when a creature's level increases.
+		/// </summary>
+		public event Action<Creature> CreatureLevelUp;
+		public void OnCreatureLevelUp(Creature creature) { CreatureLevelUp.Raise(creature); }
+
+		/// <summary>
+		/// Raised when a creature collects, aka gathers, items.
+		/// </summary>
+		public event Action<CollectEventArgs> CreatureCollected;
+		public void OnCreatureCollected(CollectEventArgs args) { CreatureCollected.Raise(args); }
 	}
 
 	public static class EventHandlerExtensions
@@ -178,6 +191,22 @@ namespace Aura.Channel.World
 		{
 			if (handler != null)
 				handler(args1, args2, args3);
+		}
+	}
+
+	public class CollectEventArgs : EventArgs
+	{
+		public Creature Creature { get; set; }
+		public CollectingData CollectData { get; set; }
+		public bool Success { get; set; }
+		public int ItemId { get; set; }
+
+		public CollectEventArgs(Creature creature, CollectingData collectData, bool success, int itemId)
+		{
+			this.Creature = creature;
+			this.CollectData = collectData;
+			this.Success = success;
+			this.ItemId = itemId;
 		}
 	}
 }

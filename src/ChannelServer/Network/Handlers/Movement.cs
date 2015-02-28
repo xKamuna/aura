@@ -11,6 +11,8 @@ using Aura.Channel.World;
 using Aura.Shared.Util;
 using Aura.Data;
 using Aura.Data.Database;
+using Aura.Channel.Network.Sending;
+using Aura.Shared.Mabi.Const;
 
 namespace Aura.Channel.Network.Handlers
 {
@@ -35,6 +37,7 @@ namespace Aura.Channel.Network.Handlers
 
 			var from = creature.GetPosition();
 			var to = new Position(x, y);
+			var walk = (packet.Op == Op.Walk);
 
 			//Position intersection;
 			//if (creature.Region.Collissions.Find(from, to, out intersection))
@@ -42,9 +45,18 @@ namespace Aura.Channel.Network.Handlers
 			//    Aura.Shared.Util.Log.Debug("Intersection at '{0}'", intersection);
 			//}
 
+			// Telewalk command
+			if (walk && creature.Vars.Temp["telewalk"] != null)
+			{
+				creature.SetPosition(to.X, to.Y);
+				Send.Effect(creature, Effect.SilentMoveTeleport, (byte)2, to.X, to.Y);
+				Send.SkillTeleport(creature, to.X, to.Y);
+				return;
+			}
+
 			creature.Region.ActivateAis(creature, from, to);
 
-			creature.Move(to, (packet.Op == Op.Walk));
+			creature.Move(to, walk);
 		}
 
 		/// <summary>
@@ -95,6 +107,28 @@ namespace Aura.Channel.Network.Handlers
 
 			// Run
 			clientEvent(creature, eventData);
+		}
+
+		/// <summary>
+		/// Sent when a client side music event is triggered.
+		/// </summary>
+		/// <remarks>
+		/// This is sent since 190X? It contains the names of the events
+		/// that change the BGM, why this is sent is unknown.
+		/// It's also untested whether you still get EventInform,
+		/// which seems to do almost the same...
+		/// </remarks>
+		/// <example>
+		/// 001 [................] String : TirChonaill_North3_ambient
+		/// </example>
+		[PacketHandler(Op.MusicEventInform)]
+		public void MusicEventInform(ChannelClient client, Packet packet)
+		{
+			var eventName = packet.GetString();
+
+			var creature = client.GetCreatureSafe(packet.Id);
+
+			// Do something with this information?
 		}
 	}
 }

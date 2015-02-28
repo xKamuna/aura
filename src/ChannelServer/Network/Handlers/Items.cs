@@ -61,6 +61,10 @@ namespace Aura.Channel.Network.Handlers
 			if (!creature.Inventory.Move(item, target, targetX, targetY))
 				goto L_Fail;
 
+			// Inform about temp moves (items in temp don't count for quest objectives?)
+			if (source == Pocket.Temporary && target == Pocket.Cursor)
+				ChannelServer.Instance.Events.OnPlayerReceivesItem(creature, item.Info.Id, item.Info.Amount);
+
 			Send.ItemMoveR(creature, true);
 			return;
 
@@ -280,7 +284,7 @@ namespace Aura.Channel.Network.Handlers
 			// This might not be entirely correct, but works well.
 			// Robe is opened first, Helm secondly, then Robe and Helm are both closed.
 
-			foreach (var target in new [] { firstTarget, secondTarget })
+			foreach (var target in new[] { firstTarget, secondTarget })
 			{
 				if (target > 0)
 				{
@@ -447,6 +451,50 @@ namespace Aura.Channel.Network.Handlers
 		}
 
 		/// <summary>
+		/// Sent when "gifting" an item.
+		/// </summary>
+		/// <example>
+		/// 0001 [0010F000000005E7] Long   : 4767482418038247
+		/// 0002 [005000CC7FFA923C] Long   : 22518876457308732
+		/// </example>
+		[PacketHandler(Op.GiftItem)]
+		public void GiftItem(ChannelClient client, Packet packet)
+		{
+			var npcId = packet.GetLong();
+			var itemId = packet.GetLong();
+
+			var creature = client.Controlling.Region.GetCreatureSafe(npcId);
+			var item = client.Controlling.Inventory.GetItemSafe(itemId);
+
+			// Temp check for pets, giving food to them uses the same packet
+			// as gifting to NPCs.
+			if (creature is Pet)
+			{
+				Send.SystemMessage(client.Controlling, Localization.Get("Unimplemented."));
+				Send.GiftItemR(client.Controlling, false);
+				return;
+			}
+
+			var npc = creature as NPC;
+
+			// TODO: If !Item is giftable..
+			// TODO: If !Npc in range...
+
+			if (npc.ScriptType == null)
+				return;
+
+			Send.NpcTalkStartR(client.Controlling, creature.EntityId);
+
+			client.NpcSession.StartGift(npc, client.Controlling, item);
+
+			client.Controlling.Inventory.Remove(item);
+
+			ChannelServer.Instance.Events.OnPlayerRemovesItem(creature, item.Info.Id, item.Info.Amount);
+
+			Send.GiftItemR(client.Controlling, true);
+		}
+
+		/// <summary>
 		/// Sent when unequipping a filled bag.
 		/// </summary>
 		/// <example>
@@ -482,6 +530,39 @@ namespace Aura.Channel.Network.Handlers
 
 			// Success
 			Send.UnequipBagR(creature, true);
+		}
+
+		/// <summary>
+		/// Request to combine similar items in stacks,
+		/// sent upon clicking button in inv.
+		/// </summary>
+		/// <example>
+		/// No parameters.
+		/// </example>
+		[PacketHandler(Op.ItemMagnet)]
+		public void ItemMagnet(ChannelClient client, Packet packet)
+		{
+			var creature = client.GetCreatureSafe(packet.Id);
+
+			Send.MsgBox(creature, Localization.Get("Not supported yet."));
+		}
+
+		/// <summary>
+		/// Notification that player saw a new item in the inv,
+		/// sent when hovering an item that's highlighted as new.
+		/// </summary>
+		/// <example>
+		/// 001 [0050000000000066] Long   : 22517998136852582
+		/// </example>
+		[PacketHandler(Op.SawItemNotification)]
+		public void SawItemNotification(ChannelClient client, Packet packet)
+		{
+			var itemEntityId = packet.GetLong();
+
+			var creature = client.GetCreatureSafe(packet.Id);
+			var item = creature.Inventory.GetItemSafe(itemEntityId);
+
+			item.IsNew = false;
 		}
 	}
 }

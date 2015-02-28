@@ -13,6 +13,7 @@ using Aura.Data.Database;
 using Aura.Channel.World;
 using Aura.Channel.Skills.Life;
 using Aura.Shared.Mabi;
+using Aura.Channel.Skills.Magic;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -25,13 +26,26 @@ namespace Aura.Channel.Skills.Combat
 	[Skill(SkillId.CombatMastery)]
 	public class CombatMastery : ICombatSkill, IInitiableSkillHandler
 	{
+		/// <summary>
+		/// Units an enemy is knocked back.
+		/// </summary>
 		private const int KnockBackDistance = 450;
 
+		/// <summary>
+		/// Subscribes skill to events needed for training.
+		/// </summary>
 		public void Init()
 		{
 			ChannelServer.Instance.Events.CreatureAttackedByPlayer += this.OnCreatureAttackedByPlayer;
 		}
 
+		/// <summary>
+		/// Handles attack.
+		/// </summary>
+		/// <param name="attacker">The creature attacking.</param>
+		/// <param name="skill">The skill being used.</param>
+		/// <param name="targetEntityId">The entity id of the target.</param>
+		/// <returns></returns>
 		public CombatSkillResult Use(Creature attacker, Skill skill, long targetEntityId)
 		{
 			if (attacker.IsStunned)
@@ -47,16 +61,21 @@ namespace Aura.Channel.Skills.Combat
 			attacker.StopMove();
 			var targetPosition = target.StopMove();
 
+			// Counter
+			if (Counterattack.Handle(target, attacker))
+				return CombatSkillResult.Okay;
+
 			var rightWeapon = attacker.Inventory.RightHand;
 			var leftWeapon = attacker.Inventory.LeftHand;
 			var magazine = attacker.Inventory.Magazine;
-			var dualWield = (rightWeapon != null && leftWeapon != null);
+			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0);
 			var maxHits = (byte)(dualWield ? 2 : 1);
 			int prevId = 0;
 
 			for (byte i = 1; i <= maxHits; ++i)
 			{
 				var weapon = (i == 1 ? rightWeapon : leftWeapon);
+				var weaponIsKnuckle = (weapon != null && weapon.Data.HasTag("/knuckle/"));
 
 				var aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
 				var tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
@@ -76,16 +95,16 @@ namespace Aura.Channel.Skills.Combat
 				var damage = attacker.GetRndDamage(weapon);
 
 				// Critical Hit
-				SkillHelper.HandleCritical(attacker, attacker.GetCritChanceFor(target), ref damage, tAction);
+				CriticalHit.Handle(attacker, attacker.GetCritChanceFor(target), ref damage, tAction);
 
 				// Subtract target def/prot
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 
 				// Defense
-				SkillHelper.HandleDefense(aAction, tAction, ref damage);
+				Defense.Handle(aAction, tAction, ref damage);
 
 				// Mana Shield
-				SkillHelper.HandleManaShield(target, ref damage, tAction);
+				ManaShield.Handle(target, ref damage, tAction);
 
 				// Deal with it!
 				if (damage > 0)
@@ -97,8 +116,19 @@ namespace Aura.Channel.Skills.Combat
 					if (tAction.Type != CombatActionType.Defended)
 					{
 						target.KnockBack += this.GetKnockBack(weapon) / maxHits;
-						if (target.KnockBack >= 100 && target.Is(RaceStands.KnockBackable))
-							tAction.Set(tAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+
+						// React normal for CombatMastery, knock down if 
+						// FH and not dual wield, don't knock at all if dual.
+						if (skill.Info.Id != SkillId.FinalHit)
+						{
+							if (target.KnockBack >= 100 && target.Is(RaceStands.KnockBackable))
+								tAction.Set(tAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+						}
+						else if (!dualWield && !weaponIsKnuckle)
+						{
+							target.KnockBack = 120;
+							tAction.Set(TargetOptions.KnockDown);
+						}
 					}
 				}
 				else
@@ -109,29 +139,29 @@ namespace Aura.Channel.Skills.Combat
 				// React to knock back
 				if (tAction.IsKnockBack)
 				{
-					var newPos = attacker.GetPosition().GetRelative(targetPosition, KnockBackDistance);
-
-					Position intersection;
-					if (target.Region.Collisions.Find(targetPosition, newPos, out intersection))
-						newPos = targetPosition.GetRelative(intersection, -50);
-
-					target.SetPosition(newPos.X, newPos.Y);
+					attacker.Shove(target, KnockBackDistance);
 
 					aAction.Set(AttackerOptions.KnockBackHit2);
 
-					cap.MaxHits = cap.Hit;
+					// Remove dual wield option if last hit doesn't come from
+					// the second weapon.
+					if (cap.MaxHits != cap.Hit)
+						aAction.Options &= ~AttackerOptions.DualWield;
 				}
 
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
 				{
-					aAction.Stun = this.GetAttackerStun(weapon, tAction.IsKnockBack);
+					aAction.Stun = this.GetAttackerStun(weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit || !dualWield));
 					tAction.Stun = this.GetTargetStun(weapon, tAction.IsKnockBack);
 				}
 
 				// Second hit doubles stun time for normal hits
 				if (cap.Hit == 2 && !tAction.IsKnockBack)
 					aAction.Stun *= 2;
+
+				// Update current weapon
+				SkillHelper.UpdateWeapon(attacker, target, weapon);
 
 				cap.Handle();
 
@@ -151,17 +181,53 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public short GetAttackerStun(Item weapon, bool knockback)
 		{
-			if (weapon == null)
-				return (!knockback ? (short)CombatStunAttacker.Normal : (short)CombatKnockbackStunAttacker.Normal);
+			//public enum CombatStunAttacker { VeryFast = 450, Fast = 520, Normal = 600, Slow = 800, VerySlow = 1000 }
+			//public enum CombatKnockbackStunAttacker { VeryFast = 2500, Fast = 2500, Normal = 2500, Slow = 2500, VerySlow = 2500 }
 
-			switch (weapon.Data.AttackSpeed)
+			var count = weapon != null ? weapon.Info.KnockCount + 1 : 3;
+			var speed = weapon != null ? (AttackSpeed)weapon.Data.AttackSpeed : AttackSpeed.Normal;
+
+			if (knockback)
+				return 2500;
+
+			switch (count)
 			{
-				case 00: return (!knockback ? (short)CombatStunAttacker.VeryFast : (short)CombatKnockbackStunAttacker.VeryFast);
-				case 01: return (!knockback ? (short)CombatStunAttacker.Fast : (short)CombatKnockbackStunAttacker.Fast);
-				case 02: return (!knockback ? (short)CombatStunAttacker.Normal : (short)CombatKnockbackStunAttacker.Normal);
-				case 03: return (!knockback ? (short)CombatStunAttacker.Slow : (short)CombatKnockbackStunAttacker.Slow);
-				default: return (!knockback ? (short)CombatStunAttacker.VerySlow : (short)CombatKnockbackStunAttacker.VerySlow);
+				case 1:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 2500;
+					}
+					break;
+
+				case 2:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 1000;
+						case AttackSpeed.Slow: return 800;
+					}
+					break;
+
+				case 3:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 1000;
+						case AttackSpeed.Slow: return 800;
+						case AttackSpeed.Normal: return 600;
+						case AttackSpeed.Fast: return 520;
+					}
+					break;
+
+				case 5:
+					switch (speed)
+					{
+						case AttackSpeed.VeryFast: return 450;
+					}
+					break;
 			}
+
+			Log.Unimplemented("GetAttackerStun: Combination {0} {1} Hit", speed, count);
+
+			return 600;
 		}
 
 		/// <summary>
@@ -172,17 +238,53 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public short GetTargetStun(Item weapon, bool knockback)
 		{
-			if (weapon == null)
-				return (!knockback ? (short)CombatStunTarget.Normal : (short)CombatKnockbackStunTarget.Normal);
+			//public enum CombatStunTarget { VeryFast = 1200, Fast = 1700, Normal = 2000, Slow = 2800, VerySlow = 3000 }
+			//public enum CombatKnockbackStunTarget { VeryFast = 3000, Fast = 3000, Normal = 3000, Slow = 3000, VerySlow = 3000 }
 
-			switch (weapon.Data.AttackSpeed)
+			var count = weapon != null ? weapon.Info.KnockCount + 1 : 3;
+			var speed = weapon != null ? (AttackSpeed)weapon.Data.AttackSpeed : AttackSpeed.Normal;
+
+			if (knockback)
+				return 3000;
+
+			switch (count)
 			{
-				case 00: return (!knockback ? (short)CombatStunTarget.VeryFast : (short)CombatKnockbackStunTarget.VeryFast);
-				case 01: return (!knockback ? (short)CombatStunTarget.Fast : (short)CombatKnockbackStunTarget.Fast);
-				case 02: return (!knockback ? (short)CombatStunTarget.Normal : (short)CombatKnockbackStunTarget.Normal);
-				case 03: return (!knockback ? (short)CombatStunTarget.Slow : (short)CombatKnockbackStunTarget.Slow);
-				default: return (!knockback ? (short)CombatStunTarget.VerySlow : (short)CombatKnockbackStunTarget.VerySlow);
+				case 1:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 3000;
+					}
+					break;
+
+				case 2:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 3000;
+						case AttackSpeed.Slow: return 2800;
+					}
+					break;
+
+				case 3:
+					switch (speed)
+					{
+						case AttackSpeed.VerySlow: return 2200;
+						case AttackSpeed.Slow: return 2100;
+						case AttackSpeed.Normal: return 2000;
+						case AttackSpeed.Fast: return 1700;
+					}
+					break;
+
+				case 5:
+					switch (speed)
+					{
+						case AttackSpeed.VeryFast: return 1200;
+					}
+					break;
 			}
+
+			Log.Unimplemented("GetAttackerStun: Combination {0} {1} Hit", speed, count);
+
+			return 2000;
 		}
 
 		/// <summary>

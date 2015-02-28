@@ -19,6 +19,9 @@ public class GlenisScript : NpcScript
 		EquipItem(Pocket.Hair, 3020, 0x00BC756C, 0x00BC756C, 0x00BC756C);
 		EquipItem(Pocket.Armor, 15010, 0x00764E63, 0x00CCD8ED, 0x00E7957A);
 		EquipItem(Pocket.Shoe, 17012, 0x00764E63, 0x00FC9C5F, 0x00D2CCE5);
+
+		AddGreeting(0, "Are you looking for the Restaurant? This is it.");
+		AddGreeting(1, "What... was your name again?<br/>Bah, my memory is not like it used to be in my old age.");
         
 		AddPhrase("Come buy your food here.");
 		AddPhrase("Flora! Are the ingredients ready?");
@@ -46,34 +49,44 @@ public class GlenisScript : NpcScript
 		switch (await Select()) 
 		{
 			case "@talk":
-				Msg("It's you again, <username/>.<br/>I appreciate your stopping by often.");
-				// "Ohhhh! I remember. You are <username/>.<br/>Well, good to see you again."
-				// "Are you looking for the Restaurant? This is it."
-
-				// If the player is wearing the Savior of Erinn title, she will say this after the first message
-				// Msg("Erinn's Guardian, huh...?<br/>Sounds like my husband when he was young... Hehe.<br/>If you need anything, just let me know.");
-				await StartConversation();
+				Greet();
+				Msg(Hide.Name, GetMoodString(), FavorExpression());
+				if (Title == 11002)
+					Msg("Erinn's Guardian, huh...?<br/>Sounds like my husband when he was young... Hehe.<br/>If you need anything, just let me know.");
+				await Conversation();
 				break;
 
 			case "@shop":
 				Msg("Are you looking for any kind of food in particular?<br/>Take your pick.");
 				OpenShop("GlenisShop");
-				break;
+				return;
 		}
+		
+		End("Thank you, <npcname/>. I'll see you later!");
 	}
 	protected override async Task Keywords(string keyword)
 	{
 		switch (keyword)
 		{
 			case "personal_info":
-				// On the first time using this keyword, she says this
-				// "Oh, my! Don't be so formal but just call me Glenis!"
-				Msg("What do I do for a living, you ask? Ha ha. I own this Restaurant, and my name is Glenis. I thought I told you all of this.");
+				if (Memory == 1)
+				{
+					Msg("Oh, my! Don't be so formal but just call me <npcname/>!");
+					ModifyRelation(1, 0, Random(2));
+				}
+				else
+				{
+					GiveKeyword("shop_restaurant");
+					Msg(FavorExpression(), "What do I do for a living, you ask? Ha ha. I own this Restaurant, and my name is <npcname/>. I thought I told you all of this.");
+					ModifyRelation(Random(2), 0, Random(2));
+				}
 				break;
 
 			case "rumor":
-				Msg("Rumors around here? Well...<br/>Do I look like I would be keen on other people's affairs? Ha ha.<br/>You seem pretty tired.<br/>Why don't you go to the Healer's House down there and talk to Manus.");
+				GiveKeyword("shop_healing");
+				Msg(FavorExpression(), "Rumors around here? Well...<br/>Do I look like I would be keen on other people's affairs? Ha ha.<br/>You seem pretty tired.<br/>Why don't you go to the Healer's House down there and talk to Manus.");
 				Msg("If you have the Resting skill handy, he'll give you some helpful tips.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "about_skill":
@@ -98,7 +111,7 @@ public class GlenisScript : NpcScript
 				break;
 
 			case "about_arbeit":
-				Msg("Are you here for work?<br/>Sorry, but it's not business hours yet.");
+				Msg("Unimplemented");
 				break;
 
 			case "shop_misc":
@@ -186,7 +199,7 @@ public class GlenisScript : NpcScript
 				break;
 
 			default:
-				RndMsg(
+				RndFavorMsg(
 					"You should go ask someone else.",
 					"I don't know much about things like that. Ha ha.",
 					"Oh, no. I don't know what to tell you about that.",
@@ -196,13 +209,9 @@ public class GlenisScript : NpcScript
 					"That's not a topic I'm very familiar with. Perhaps Walter over there knows more about it than I do.",
 					"Asking about a topic like that to an<br/>ordinary Restaurant owner is not very proper, you know. Ha ha."
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
-	}
-
-	public override void EndConversation()
-	{
-		Close("Thank you, <npcname/>. I'll see you later!");
 	}
 }
 
@@ -210,11 +219,6 @@ public class GlenisShop : NpcShopScript
 {
 	public override void Setup() 
 	{
-		//----------------
-		// Food
-		//----------------
-
-		// Page 1
 		Add("Food", 50004);     // Bread
 		Add("Food", 50002);     // Slice of Cheese
 		Add("Food", 50220);     // Corn Powder
@@ -287,8 +291,6 @@ public class GlenisShop : NpcShopScript
 		Add("Food", 50130, 5);  // Whipped Cream x5
 		Add("Food", 50130, 10); // Whipped Cream x10
 		Add("Food", 50130, 20); // Whipped Cream x20
-
-		// Page 2
 		Add("Food", 50186);     // Red Pepper Powder x1
 		Add("Food", 50186, 5);  // Red Pepper Powder x5
 		Add("Food", 50186, 10); // Red Pepper Powder x10
@@ -344,8 +346,6 @@ public class GlenisShop : NpcShopScript
 		Add("Food", 50430, 20); // Grapes x20
 		Add("Food", 50120);     // Steamed Rice
 		Add("Food", 50102);     // Potato Salad
-
-		// Page 3
 		Add("Food", 50431);     // Ripe Pumpkin x1
 		Add("Food", 50431, 5);  // Ripe Pumpkin x5
 		Add("Food", 50431, 10); // Ripe Pumpkin x10
@@ -357,22 +357,12 @@ public class GlenisShop : NpcShopScript
 		Add("Food", 50104);     // Egg Salad
 		Add("Food", 50101);     // Potato Egg Salad
 
-		//----------------
-		// Gift
-		//----------------
-
-		// Page 1
 		Add("Gift", 52010); // Ramen
 		Add("Gift", 52021); // Slice of Cake
 		Add("Gift", 52019); // Heart Cake
 		Add("Gift", 52022); // Wine
 		Add("Gift", 52023); // Wild Ginseng
 
-		//----------------
-		// Quest
-		//----------------
-
-		// Page 1
 		Add("Quest", 70070); // Cooking Quest - Curry Paste
 		Add("Quest", 70070); // Cooking Quest - Fry Batter
 		Add("Quest", 70070); // Cooking Quest - Flour Dough
@@ -382,11 +372,6 @@ public class GlenisShop : NpcShopScript
 		Add("Quest", 70070); // Cooking Quest - Assorted Fruits
 		Add("Quest", 70070); // Cooking Quest - Rice
 
-		//----------------
-		// Event
-		//----------------
-
-		// Page 1
 		Add("Event"); // Empty
 	}
 }

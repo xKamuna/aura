@@ -48,10 +48,10 @@ public class BebhinnBaseScript : NpcScript
 				Msg("Is this your first time here? Nice to meet you.");
 				//Msg("I think we've met before... nice to see you again.");
 				await StartConversation();
-				return;
+				break;
 				
 			case "@bank":
-				Msg("(Unimplemented)");
+				OpenBank();
 				return;
 				
 			case "@redeem":
@@ -64,22 +64,21 @@ public class BebhinnBaseScript : NpcScript
 				if(!RedeemCoupon(input))
 				{
 					Msg("I checked the number at our Head Office, and they say this coupon does not exist.<br/>Please double check the coupon number.");
-					return;
 				}
-				
-				// Unofficial response.
-				Msg("There you go, have a nice day.");
-				return;
+				else
+				{
+					// Unofficial response.
+					Msg("There you go, have a nice day.");
+				}
+				break;
 				
 			case "@shop":
 				Msg("So, does that mean you're looking for a Personal Shop License then?<br/>You must have something you want to sell around here!<br/>Hahaha...");
 				OpenShop("BebhinnShop");
 				return;
-				
-			default:
-				Msg("...");
-				return;
 		}
+		
+		End();
 	}
 	
 	protected override async Task Keywords(string keyword)
@@ -88,12 +87,12 @@ public class BebhinnBaseScript : NpcScript
 		{
 			case "personal_info":
 				Msg("My name is Bebhinn. Don't forget it!");
-				// MoodChange if not first?
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 				
 			case "rumor":
 				Msg("Oh, you know what?<br/>Some people were hitting the scarecrow at the School to practice their skills,<br/>and they wandered off and ruined the crops in the farmland.<br/>The owner got pretty upset about it.");
-				// MoodChange
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 				
 			case "about_skill":
@@ -109,7 +108,7 @@ public class BebhinnBaseScript : NpcScript
 				break;
 				
 			case "shop_grocery":
-				Player.Keywords.Give("skill_gathering");
+				GiveKeyword("skill_gathering");
 				Msg("The Grocery Store is next to the Bank.<br/>There's a big chef sign next to it.<br/>And chat with Caitin while you're there.<p/>Her food is fresh because she uses ingredients harvested directly<br/>from the farm next to the shop.");
 				break;
 				
@@ -158,7 +157,7 @@ public class BebhinnBaseScript : NpcScript
 				break;
 			
 			default:
-				RndMsg(
+				RndFavorMsg(
 					"Can we change the subject?",
 					"Hmm... You know a story I've never heard of... How could that be?",
 					"Hehe... I don't know what you're talking about...",
@@ -167,7 +166,7 @@ public class BebhinnBaseScript : NpcScript
 					"What's that?",
 					"Well...what do you mean?"
 				);
-				// MoodChange
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}

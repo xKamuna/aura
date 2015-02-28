@@ -42,11 +42,14 @@ namespace Aura.Data.Database
 
 		public byte WeaponType { get; set; }
 		public InstrumentType InstrumentType { get; set; }
+		public int MaxUpgrades { get; set; }
 
 		public short Range { get; set; }
 		public ushort AttackMin { get; set; }
 		public ushort AttackMax { get; set; }
-		public byte Critical { get; set; }
+		public byte InjuryMin { get; set; }
+		public byte InjuryMax { get; set; }
+		public sbyte Critical { get; set; }
 		public byte Balance { get; set; }
 		public byte AttackSpeed { get; set; }
 		public byte KnockCount { get; set; }
@@ -54,10 +57,27 @@ namespace Aura.Data.Database
 		public int BagWidth { get; set; }
 		public int BagHeight { get; set; }
 
+		public ItemDataTaste Taste { get; set; }
+
 		public string OnUse { get; set; }
 		public string OnEquip { get; set; }
 		public string OnUnequip { get; set; }
 		public string OnCreation { get; set; }
+	}
+
+	public class ItemDataTaste
+	{
+		public int Beauty { get; set; }
+		public int Individuality { get; set; }
+		public int Luxury { get; set; }
+		public int Toughness { get; set; }
+		public int Utility { get; set; }
+		public int Rarity { get; set; }
+		public int Meaning { get; set; }
+		public int Adult { get; set; }
+		public int Maniac { get; set; }
+		public int Anime { get; set; }
+		public int Sexy { get; set; }
 	}
 
 	/// <summary>
@@ -108,6 +128,7 @@ namespace Aura.Data.Database
 			info.Defense = entry.ReadInt("defense");
 			info.Protection = entry.ReadShort("protection");
 			info.InstrumentType = (InstrumentType)entry.ReadInt("instrumentType");
+			info.MaxUpgrades = entry.ReadInt("maxUpgrades");
 
 			info.WeaponType = entry.ReadByte("weaponType");
 			if (info.WeaponType != 0)
@@ -115,7 +136,9 @@ namespace Aura.Data.Database
 				info.Range = entry.ReadShort("range");
 				info.AttackMin = entry.ReadUShort("attackMin");
 				info.AttackMax = entry.ReadUShort("attackMax");
-				info.Critical = entry.ReadByte("critical");
+				info.InjuryMin = entry.ReadByte("injuryMin");
+				info.InjuryMax = entry.ReadByte("injuryMax");
+				info.Critical = entry.ReadSByte("critical");
 				info.Balance = entry.ReadByte("balance");
 				info.AttackSpeed = entry.ReadByte("attackSpeed");
 				info.KnockCount = entry.ReadByte("knockCount");
@@ -123,6 +146,24 @@ namespace Aura.Data.Database
 
 			info.BagWidth = entry.ReadInt("bagWidth");
 			info.BagHeight = entry.ReadInt("bagHeight");
+
+			info.Taste = new ItemDataTaste();
+			if (entry.ContainsKeys("taste"))
+			{
+				var taste = entry["taste"] as JObject;
+
+				info.Taste.Beauty = taste.ReadInt("beauty");
+				info.Taste.Individuality = taste.ReadInt("individuality");
+				info.Taste.Luxury = taste.ReadInt("luxury");
+				info.Taste.Toughness = taste.ReadInt("toughness");
+				info.Taste.Utility = taste.ReadInt("utility");
+				info.Taste.Rarity = taste.ReadInt("rarity");
+				info.Taste.Meaning = taste.ReadInt("meaning");
+				info.Taste.Adult = taste.ReadInt("adult");
+				info.Taste.Maniac = taste.ReadInt("maniac");
+				info.Taste.Anime = taste.ReadInt("anime");
+				info.Taste.Sexy = taste.ReadInt("sexy");
+			}
 
 			info.OnUse = entry.ReadString("onUse");
 			info.OnEquip = entry.ReadString("onEquip");

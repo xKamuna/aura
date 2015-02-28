@@ -56,22 +56,73 @@ public class FerghusBaseScript : NpcScript
 			case "@shop":
 				Msg("Looking for a weapon?<br/>Or armor?");
 				OpenShop("FerghusShop");
-				break;
+				return;
 				
 			case "@repair":
-				Msg("If you want to have armor, kits or weapons repaired, you've come to the right place.<br/>I sometimes make mistakes, but I offer the best deal for repair work.<br/>For rare and expensive items, I think you should go to a big city. I can't guarantee anything.");
-				Msg("Unimplemented");
+				Msg("If you want to have armor, kits or weapons repaired, you've come to the right place.<br/>I sometimes make mistakes, but I offer the best deal for repair work.<br/>For rare and expensive items, I think you should go to a big city. I can't guarantee anything.<br/><repair rate='90' stringid='(*/smith_repairable/*)' />");
+				
+				while(true)
+				{
+					var repair = await Select();
+				
+					if(!repair.StartsWith("@repair"))
+						break;
+					
+					var result = Repair(repair, 90, "/smith_repairable/");
+					if(!result.HadGold)
+					{
+						RndMsg(
+							"Haha. You don't have enough Gold to repair that.",
+							"Well, you have to bring more money to have it fixed.",
+							"Do you have the Gold?"
+						);
+					}
+					else if(result.Points == 1)
+					{
+						if(result.Fails == 0)
+							RndMsg(
+								"Alright! 1 Point repaired!",
+								"Durability rose 1 point.",
+								"Finished 1 point repair."
+							);
+						else
+							Msg("Hmm... The repair didn't go well. Sorry...");
+					}
+					else if(result.Points > 1)
+					{
+						if(result.Fails == 0)
+							Msg("Alright! It's perfectly repaired.");
+						else
+							// TODO: Use string format once we have XML dialogues.
+							Msg("Repair is over.<br/>Unfortunately, I made " + result.Fails + " mistake(s).<br/>Only " + result.Successes + " point(s) got repaired.");
+					}
+				}
+				
+				Msg("<repair hide='true'/>By the way, do you know you can bless your items with the Holy Water of Lymilark?<br/>I don't know why but I make fewer mistakes<br/>while repairing blessed items. Haha.");
+				Msg("Well, come again when you have items to fix.");
 				break;
 				
 			case "@upgrade":
-				Msg("Will you select items to be modified?<br/>The number and types of modifications are different depending on the items.<br/>When I modify them, my hands never slip or make mistakes. So don't worry. Trust me.");
-				Msg("Unimplemented");
-				break;
+				Msg("Will you select items to be modified?<br/>The number and types of modifications are different depending on the items.<br/>When I modify them, my hands never slip or make mistakes. So don't worry. Trust me.<upgrade />");
 				
-			default:
-				Msg("...");
+				while(true)
+				{
+					var reply = await Select();
+					
+					if(!reply.StartsWith("@upgrade:"))
+						break;
+						
+					var result = Upgrade(reply);
+					if(result.Success)
+						Msg("The modification you've asked for has been done.<br/>Is there anything you want to modify?");
+					else
+						Msg("(Error)");
+				}
+				Msg("If you have something to modify, let me know anytime.<upgrade hide='true'/>");
 				break;
 		}
+		
+		End("Goodbye, Ferghus. I'll see you later!");
 	}
 
 	protected override async Task Keywords(string keyword)
@@ -80,16 +131,18 @@ public class FerghusBaseScript : NpcScript
 		{
 			case "personal_info":
 				Msg("I'm the blacksmith of Tir Chonaill. We'll see each other often, <username/>.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "rumor":
-				Player.Keywords.Give("windmill");
+				GiveKeyword("windmill");
 				Msg("The wind around Tir Chonaill is very strong. It even breaks the windmill blades.<br/>And I'm the one to fix them.<br/>Malcolm's got some skills,<br/>but I'm the one who deals with iron.");
 				Msg("I made those extra blades out there just in case.<br/>When the Windmill stops working, it's really inconvenient around here.<br/>It's always better to be prepared, isn't it?<br/>");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 				
 			case "about_skill":
-				Player.Keywords.Give("skill_fishing");
+				GiveKeyword("skill_fishing");
 				Msg("Hmm... Well, <username/>, since you ask,<br/>I might as well answer you. Let's see.<br/>Fishing. Do you know about the Fishing skill?");
 				Msg("I'm not sure about the details, but<br/>I've seen a lot of people fishing up there.<br/>I'm not sure if fishing would be considered a skill, though.");
 				Msg("From what I've seen, all you need is<br/>a Fishing Rod and a Bait Tin.");
@@ -161,7 +214,7 @@ public class FerghusBaseScript : NpcScript
 				break;
 				
 			case "school":
-				Player.Keywords.Give("farmland");
+				GiveKeyword("farmland");
 				Msg("Did you ask because you want to know the location of the School?<br/>Then I will give you an answer.<br/>Cross the bridge first,<br/>and there's a road. Just go to the left until you see the farmland.");
 				Msg("If you pass the farmland, the School is very near you.<br/>The School gate is pretty big so you can't miss it.");
 				Msg("When you get there, can you tell Ranald<br/>we should get a drink together?<br/>Lassar must not find out about it, alright?");
@@ -207,6 +260,7 @@ public class FerghusBaseScript : NpcScript
 					"I don't know, man. That's just out of my league.",
 					"Haha. I have no idea."
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}

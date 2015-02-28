@@ -23,7 +23,7 @@ namespace Aura.Login.Network
 		{
 			var packet = new Packet(Op.ClientIdentR, MabiId.Login);
 			packet.PutByte(success);
-			packet.PutLong(ErinnTime.Now.TimeStamp);
+			packet.PutLong(DateTime.Now);
 
 			client.Send(packet);
 		}
@@ -492,10 +492,10 @@ namespace Aura.Login.Network
 		/// </summary>
 		/// <param name="packet"></param>
 		/// <param name="account"></param>
-		private static void Add(this  Packet packet, Account account)
+		private static void Add(this Packet packet, Account account)
 		{
-			packet.PutLong(ErinnTime.Now.TimeStamp);	// Last Login
-			packet.PutLong(ErinnTime.Now.TimeStamp);	// Last Logout
+			packet.PutLong(DateTime.Now);	// Last Login
+			packet.PutLong(DateTime.Now);	// Last Logout
 			packet.PutInt(0);
 			packet.PutByte(1);
 			packet.PutByte(34);
@@ -536,7 +536,7 @@ namespace Aura.Login.Network
 				packet.PutLong(0);
 			}
 
-			packet.PutByte(0);	
+			packet.PutByte(0);
 			packet.PutByte(0);				// 1: 프리미엄 PC방 서비스 사용중, 16: Free Play Event
 			packet.PutByte(false);			// Free Beginner Service
 
@@ -627,6 +627,11 @@ namespace Aura.Login.Network
 		/// Only seen in KR
 		/// </summary>
 		KR = 0,
+
+		/// <summary>
+		/// Used to request disconnect when you're already logged in.
+		/// </summary>
+		RequestDisconnect = 1,
 
 		/// <summary>
 		/// Coming from channel (session key)

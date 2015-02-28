@@ -48,12 +48,10 @@ public class PiarasBaseScript : NpcScript
 			case "@shop":
 				Msg("May I ask what you are looking for?");
 				OpenShop("PiarasShop");
-				break;
-				
-			default:
-				Msg("...");
-				break;
+				return;
 		}
+		
+		End("Goodbye, Piaras. I'll see you later!");
 	}
 	
 	protected override async Task Keywords(string keyword)
@@ -61,12 +59,14 @@ public class PiarasBaseScript : NpcScript
 		switch(keyword)
 		{
 			case "personal_info":
-				Player.Keywords.Give("shop_inn");
+				GiveKeyword("shop_inn");
 				Msg("I might sound too proud,<br/>but I put a lot of effort into making this place as comfortable for my guests as possible.<br/>Please visit us when you need a place to stay.<br/>");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 				
 			case "rumor":
 				Msg("Why don't you talk to others in town? There's a good spot to meet people. The Town Square is right up this way. I suggest you try there first.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 				
 			case "about_skill":
@@ -202,6 +202,7 @@ public class PiarasBaseScript : NpcScript
 					"I'm afraid this conversation isn't very interesting to me.",				
 					"To be honest, I don't know."					
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}		
 	}

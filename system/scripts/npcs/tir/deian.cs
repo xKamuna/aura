@@ -59,7 +59,7 @@ public class DeianScript : NpcScript
 			case "@shop":
 				Msg("I got nothing much, except for some quest scrolls. Are you interested?");
 				OpenShop("DeianShop");
-				break;
+				return;
 
 			case "@upgrade":
 				Msg("Upgrades! Who else would know more about that than the great Deian? Hehe...<br/>Now, what do you want to upgrade?<br/>Don't forget to check how many times you can upgrade that tiem and what type of upgrade it is before you give it to me... <upgrade />",
@@ -73,11 +73,9 @@ public class DeianScript : NpcScript
 						break;
 				}
 				break;
-
-			default:
-				Msg("...");
-				break;
 		}
+		
+		End();
 	}
 
 	protected override async Task Keywords(string keyword)
@@ -86,16 +84,18 @@ public class DeianScript : NpcScript
 		{
 			case "personal_info":
 				Msg("Yeah, yeah. I'm a mere shepherd...for now.<br/>But I will soon be a mighty warrior!<br/>");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "rumor":
-				Player.Keywords.Give("pool");
+				GiveKeyword("pool");
 				Msg("Some people should have been born as fish.<br/>They can't pass water without diving right in.<br/>I wish they'd stop.");
 				Msg("Not long ago, someone jumped into the reservoir<br/>and made a huge mess.<br/>Guess who got stuck cleaning it up?<br/>Sooo not my job.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "about_skill":
-				Player.Keywords.Give("skill_instrument");
+				GiveKeyword("skill_instrument");
 				Msg("Know anything about the Instrument Playing skill?<br/>Only introspective guys like me<br/>can handle instruments.<br/>I wonder how well you would do...");
 				Msg("Priestess Endelyon knows all about this skill.<br/>You should talk to her.<br/>");
 				break;
@@ -106,7 +106,7 @@ public class DeianScript : NpcScript
 				break;
 
 			case "skill_instrument":
-				Player.Keywords.Give("temple");
+				GiveKeyword("temple");
 				Msg("You really are something.<br/>I just told you,<br/>talk to Priestess Endelyon at the Church<br/>about that.");
 				Msg("I know your type...<br/>You like to use everything single<br/>keyword you get... Bug off!");
 				break;
@@ -207,6 +207,7 @@ public class DeianScript : NpcScript
 					"So many questions, at least give me a small gift...",
 					"Sometimes, I'm just not in the mood to answer questions."
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}

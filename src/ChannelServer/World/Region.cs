@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Aura.Channel.Network;
 using Aura.Channel.Network.Sending;
+using Aura.Channel.Util;
 using Aura.Channel.World.Entities;
 using Aura.Data;
 using Aura.Shared.Mabi.Const;
@@ -14,6 +15,7 @@ using Aura.Shared.Util;
 using System.Threading;
 using Aura.Data.Database;
 using Boo.Lang.Compiler.TypeSystem;
+using System.Drawing;
 
 namespace Aura.Channel.World
 {
@@ -56,6 +58,8 @@ namespace Aura.Channel.World
 
 			_clients = new HashSet<ChannelClient>();
 
+			this.Collisions = new RegionCollision();
+
 			_regionData = AuraData.RegionInfoDb.Find(this.Id);
 
 			if (_regionData == null)
@@ -67,7 +71,6 @@ namespace Aura.Channel.World
 				return;
 			}
 
-			this.Collisions = new RegionCollision(_regionData.X1, _regionData.Y1, _regionData.X2, _regionData.Y2);
 			this.Collisions.Init(_regionData);
 			this.LoadClientProps();
 		}
@@ -359,6 +362,38 @@ namespace Aura.Channel.World
 		public NPC GetNpc(long entityId)
 		{
 			return this.GetCreature(entityId) as NPC;
+		}
+
+		/// <summary>
+		/// Returns NPC by entity id, throws SevereViolation exception if
+		/// NPC doesn't exist.
+		/// </summary>
+		/// <param name="entityId"></param>
+		/// <returns></returns>
+		public NPC GetNpcSafe(long entityId)
+		{
+			var npc = this.GetNpc(entityId);
+
+			if (npc == null)
+				throw new SevereViolation("Tried to get a nonexistant NPC");
+
+			return npc;
+		}
+
+		/// <summary>
+		/// Returns creature by entity id, throws SevereViolation exception if
+		/// creature doesn't exist.
+		/// </summary>
+		/// <param name="entityId"></param>
+		/// <returns></returns>
+		public Creature GetCreatureSafe(long entityId)
+		{
+			var creature = this.GetCreature(entityId);
+
+			if (creature == null)
+				throw new SevereViolation("Tried to get a nonexistant creature");
+
+			return creature;
 		}
 
 		/// <summary>
@@ -657,6 +692,46 @@ namespace Aura.Channel.World
 		}
 
 		/// <summary>
+		/// Returns new list of all creatures within range of position.
+		/// </summary>
+		public List<Creature> GetCreaturesInRange(Position pos, int range)
+		{
+			var result = new List<Creature>();
+
+			_creaturesRWLS.EnterReadLock();
+			try
+			{
+				result.AddRange(_creatures.Values.Where(a => a.GetPosition().InRange(pos, range)));
+			}
+			finally
+			{
+				_creaturesRWLS.ExitReadLock();
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Returns new list of all creatures within the specified polygon.
+		/// </summary>
+		public List<Creature> GetCreaturesInPolygon(params Point[] points)
+		{
+			var result = new List<Creature>();
+
+			_creaturesRWLS.EnterReadLock();
+			try
+			{
+				result.AddRange(_creatures.Values.Where(a => a.GetPosition().InPolygon(points)));
+			}
+			finally
+			{
+				_creaturesRWLS.ExitReadLock();
+			}
+
+			return result;
+		}
+
+		/// <summary>
 		/// Removes all scripted entites from this region.
 		/// </summary>
 		public void RemoveScriptedEntities()
@@ -728,8 +803,13 @@ namespace Aura.Channel.World
 			_creaturesRWLS.EnterReadLock();
 			try
 			{
-				return _creatures.Values.OfType<NPC>()
-					.Count(npc => npc.AI != null && npc.AI.State == Scripting.Scripts.AiScript.AiState.Aggro && npc.Race == raceId && npc.Target == target);
+				return _creatures.Values.OfType<NPC>().Count(npc =>
+					!npc.IsDead &&
+					npc.AI != null &&
+					npc.AI.State == Scripting.Scripts.AiScript.AiState.Aggro &&
+					npc.Race == raceId &&
+					npc.Target == target
+				);
 			}
 			finally
 			{

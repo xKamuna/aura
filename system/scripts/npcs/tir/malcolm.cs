@@ -50,11 +50,11 @@ public class MalcolmBaseScript : NpcScript
 				//Msg("Ah, my VIP customer, <username/>! Welcome.");
 				//Alternate messages as you talk to him more? Apparently it logs your visits at least to this shop
 				await StartConversation();
-				return;
+				break;
 				
 			case "@shop":
 				Msg("Welcome to Malcolm's General Shop.<br/>Look around as much as you wish. Clothes, accessories and other goods are in stock.");
-				Msg("(Unimplemented)");
+				OpenShop("MalcolmShop");
 				return;
 				
 			case "@repair":
@@ -62,12 +62,10 @@ public class MalcolmBaseScript : NpcScript
 				Msg("(Unimplemented)");
 				//Next message happens after you close repair window
 				//Msg("Let me give you a tip.<br/>If you bless your item with Holy Water of Lymilark,<br/>you can reduce abrasion which means your item will wear off more slowly over time.");
-				return;
-
-			default:
-				Msg("...");
-				return;
+				break;
 		}
+		
+		End("Goodbye, Malcolm. I'll see you later!");
 	}
 	
 	protected override async Task Keywords(string keyword)
@@ -75,12 +73,14 @@ public class MalcolmBaseScript : NpcScript
 		switch (keyword)
 		{
 			case "personal_info":
-				Player.Keywords.Give("shop_misc");
+				GiveKeyword("shop_misc");
 				Msg("I run this General Shop. I sell various goods.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "rumor":
 				Msg("Tir Chonaill is a peaceful town.<br/>So when something happens, everyone in the town knows right away.<br/>I warn you, some were humiliated because of that...<br/>Nothing is as important as being responsible for your own actions.<p/>If you behave like Tracy, you'll be in big trouble.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "about_skill":
@@ -119,7 +119,7 @@ public class MalcolmBaseScript : NpcScript
 				break;
 
 			case "pool":
-				Player.Keywords.Give("shop_grocery");
+				GiveKeyword("shop_grocery");
 				Msg("Go down the road behind Caitin's Grocery Store and you'll find it soon.<br/>If it weren't for the reservoir,<br/>the crops wouldn't grow.<br/>It sure does play a vital role in our town's agriculture.");
 				break;
 
@@ -136,7 +136,7 @@ public class MalcolmBaseScript : NpcScript
 				break;
 
 			case "school":
-				Player.Keywords.Give("pool");
+				GiveKeyword("pool");
 				Msg("The School?<br/>You can get there by going down the road towards the Bank and to the reservoir.<br/>If you still can't find it, right-click your mouse and look around.<br/>Scrolling the mouse wheel would help too.<p/>By the way, are you a student?");
 				break;
 
@@ -164,6 +164,7 @@ public class MalcolmBaseScript : NpcScript
 					"I think I heard about it but... I can't remember.",
 					"Sorry, I don't know.<br/>Hm... Maybe I should have a travel diary to write things down."
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}

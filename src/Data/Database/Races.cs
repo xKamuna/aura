@@ -51,6 +51,7 @@ namespace Aura.Data.Database
 		public string AI { get; set; }
 		public float CombatPower { get; set; }
 		public float Life { get; set; }
+		public float Mana { get; set; }
 		public int Defense { get; set; }
 		public int Protection { get; set; }
 		public int Exp { get; set; }
@@ -81,15 +82,51 @@ namespace Aura.Data.Database
 	{
 		public int ItemId { get; set; }
 		public float Chance { get; set; }
+		public int Amount { get; set; }
+		public int Prefix { get; set; }
+		public int Suffix { get; set; }
+		public uint Color1 { get; set; }
+		public uint Color2 { get; set; }
+		public uint Color3 { get; set; }
+		public bool HasColor { get; set; }
 
 		public DropData()
 		{
 		}
 
-		public DropData(int itemId, float chance)
+		public DropData(int itemId, float chance, int amount = 1, int prefix = 0, int suffix = 0)
 		{
 			this.ItemId = itemId;
 			this.Chance = chance;
+			this.Amount = amount;
+			this.Prefix = prefix;
+			this.Suffix = suffix;
+		}
+
+		public DropData(int itemId, float chance, int amount, int prefix, int suffix, uint color1, uint color2, uint color3)
+			: this(itemId, chance, amount, prefix, suffix)
+		{
+			this.Color1 = color1;
+			this.Color2 = color2;
+			this.Color3 = color3;
+			this.HasColor = true;
+		}
+
+		public DropData Copy()
+		{
+			var result = new DropData();
+
+			result.ItemId = this.ItemId;
+			result.Chance = this.Chance;
+			result.Amount = this.Amount;
+			result.Prefix = this.Prefix;
+			result.Suffix = this.Suffix;
+			result.Color1 = this.Color1;
+			result.Color2 = this.Color2;
+			result.Color3 = this.Color3;
+			result.HasColor = this.HasColor;
+
+			return result;
 		}
 	}
 
@@ -262,7 +299,7 @@ namespace Aura.Data.Database
 					}
 					else if (obj[col].Type == JTokenType.Array)
 					{
-						list.AddRange(obj[col].Select(id => (int) id));
+						list.AddRange(obj[col].Select(id => (int)id));
 					}
 				}
 			};
@@ -275,6 +312,7 @@ namespace Aura.Data.Database
 			// Stat Info
 			raceData.CombatPower = entry.ReadFloat("cp");
 			raceData.Life = entry.ReadFloat("life");
+			raceData.Mana = entry.ReadFloat("mana");
 			raceData.Defense = entry.ReadInt("defense");
 			raceData.Protection = (int)entry.ReadFloat("protection");
 			raceData.Element = (Element)entry.ReadByte("element");
@@ -292,6 +330,17 @@ namespace Aura.Data.Database
 					var dropData = new DropData();
 					dropData.ItemId = drop.ReadInt("itemId");
 					dropData.Chance = drop.ReadFloat("chance");
+					dropData.Amount = drop.ReadInt("amount", 1);
+					dropData.Prefix = drop.ReadInt("prefix");
+					dropData.Suffix = drop.ReadInt("suffix");
+
+					if (drop.ContainsKeys("color1"))
+					{
+						dropData.Color1 = drop.ReadUInt("color1", 0x808080);
+						dropData.Color2 = drop.ReadUInt("color2", 0x808080);
+						dropData.Color3 = drop.ReadUInt("color3", 0x808080);
+						dropData.HasColor = true;
+					}
 
 					dropData.Chance /= 100;
 					if (dropData.Chance > 1)

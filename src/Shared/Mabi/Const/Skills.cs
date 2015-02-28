@@ -92,7 +92,7 @@ namespace Aura.Shared.Mabi.Const
 		// Combat
 		Defense = 20001,
 		Smash = 20002,
-		MeleeCounterattack = 20003,
+		Counterattack = 20003,
 		NaturalShield = 20004,
 		HeavyStander = 20005,
 		ManaDeflector = 20006,
@@ -538,5 +538,13 @@ namespace Aura.Shared.Mabi.Const
 		Bad = 1,
 		Good = 2,
 		VeryGood = 3
+	}
+
+	public enum SharpMindStatus
+	{
+		None = 0,
+		Loading = 1,
+		Loaded = 2,
+		Cancelling = 6
 	}
 }

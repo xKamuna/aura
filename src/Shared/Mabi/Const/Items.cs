@@ -127,4 +127,65 @@ namespace Aura.Shared.Mabi.Const
 		Slow,
 		VerySlow,
 	}
+
+	/// <summary>
+	/// ?
+	/// </summary>
+	/// <remarks>
+	/// Attr_ActionFlag in item db.
+	/// </remarks>
+	public enum ItemActionFlag
+	{
+		NormalItem = 0,
+		StaticItem = 1,
+		ImportantItem = 2,
+		AccountPersonalItem = 3,
+		DungeonItem = 4, // Special weapons for dungeons?
+		CharacterPersonalItem = 5, // Elsinore/Training Short Sword
+		RegionFixedItem = 6, // Keys?
+		BankBlockedItem = 7, // Gems?
+		NewBagItem = 8, // Events?
+		BankBlockedCharacterPersonalItem = 9,
+		GuildItem = 10, // Guild Robe
+		// 11
+		NotDealItem = 12,
+		Important2Item = 13, // Brionac
+		TradeLimitItem = 14,
+		// 15
+		LordKeyItem = 16,
+	}
+
+	public enum EgoRace : byte
+	{
+		None = 0,
+		SwordM = 1,
+		SwordF = 2,
+		BluntM = 3,
+		BluntF = 4,
+		WandM = 5,
+		WandF = 6,
+		BowM = 7,
+		BowF = 8,
+		EirySword = 9,
+		EiryBow = 10,
+		EiryAxe = 11,
+		EiryLute = 12,
+		EiryCylinder = 13,
+		EiryWind = 14, // ?
+		CylinderM = 15,
+		CylinderF = 16,
+	}
+
+	[Flags]
+	public enum ItemFlags : byte
+	{
+		Unknown = 0x01,
+		// ? = 0x02,
+		Blessed = 0x04,
+		Incomplete = 0x08,
+		// ? = 0x10, (adds "-only Item" text, server side gender restriction?)
+		// ? = 0x20, (removes "(Original)" text?)
+		// ? = 0x40,
+		// ? = 0x80,
+	}
 }

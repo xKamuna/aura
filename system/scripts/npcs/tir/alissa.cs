@@ -67,8 +67,7 @@ public class AlissaBaseScript : NpcScript
 					break;
 				}
 				
-				Msg("How long do you want to use the Mill?<br/>It's 100 Gold for one minute and 450 Gold for 5 minutes.<br/>Once it starts working, anyone can use the Mill.",
-					Button("1 Minute", "@1minute"), Button("5 Minutes", "@5minute"), Button("Forget It", "@quit"));
+				Msg("How long do you want to use the Mill?<br/>It's 100 Gold for one minute and 450 Gold for 5 minutes.<br/>Once it starts working, anyone can use the Mill.", Button("1 Minute", "@1minute"), Button("5 Minutes", "@5minute"), Button("Forget It", "@quit"));
 
 				switch (await Select())
 				{
@@ -83,17 +82,11 @@ public class AlissaBaseScript : NpcScript
 					case "@quit":
 						Msg("Whatever, it's your choice...<br/>Just remember that this is the only place where you can grind your crops into flour.");
 						break;
-					
-					default:
-						Msg("...");
-						break;
 				}
 				break;
-
-			default:
-				Msg("...");
-				break;
 		}
+		
+		End();
 	}
 
 	protected override async Task Keywords(string keyword)
@@ -102,15 +95,24 @@ public class AlissaBaseScript : NpcScript
 		{
 			case "personal_info":
 				Msg("My name? I am Alissa.<br/>I work here at the mill, helping around with chores.<br/>Have you seen my sister? She's at the School.<br/>If you happen to go there, go inside the left building.<br/>She'll be in the magic class.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "rumor":
-				Player.Keywords.Give("shop_smith");
+				GiveKeyword("shop_smith");
 				Msg("Ferghus?<br/>I don't know if he's a good blacksmith, but he's a nice person.<br/>Usually, when you ask him a question, he kindly answers everything...<br/>Go find out for yourself.");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "about_skill":
-				Msg("Um... I only know about Production Mastery,<br/>you know.");
+				if(!HasSkill(SkillId.ProductionMastery))
+				{
+					GiveSkill(SkillId.ProductionMastery, SkillRank.RF);
+					Msg("Have you heard of the Production Mastery skill? Learning it will give you more Stamina and Dexterity,<br/>and you'll be more successful at gathering and crafting.");
+					Msg("It's not a skill you have to activate manually, either. Simply gathering and crafting will trigger the skill,<br/>so it'll improve without any particular effort on your part.");
+				}
+				else
+					Msg("Um... I only know about Production Mastery,<br/>you know.");
 				break;
 
 			case "shop_misc":
@@ -185,19 +187,20 @@ public class AlissaBaseScript : NpcScript
 					"Hmm... I think Ferghus would be able to explain it better. He's across the stream.",
 					"Perhaps Caitin might know. Well... Anyway..."
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}
 	
 	protected void BuyWindmill(int gold, int minutes)
 	{
-		if (!Player.Inventory.HasGold(gold))
+		if (Gold < gold)
 		{
 			Msg("You don't have enough money. I'm sorry, you can't use it for free.");
 			return;
 		}
 		
-		Player.Inventory.RemoveGold(gold);
+		Gold -= gold;
 		ActivateWindmill(minutes);
 		
 		RndMsg(

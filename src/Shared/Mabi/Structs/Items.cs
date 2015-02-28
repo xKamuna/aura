@@ -31,9 +31,14 @@ namespace Aura.Shared.Mabi.Structs
 		/// </summary>
 		public byte State; // FigureA
 
-		public byte uFigureB; // related to giant's beards
-		public byte uFigureC;
-		public byte uFigureD;
+		/// <summary>
+		/// - Ego aura level (0-21)
+		/// - Related to giant's beards
+		/// </summary>
+		public byte FigureB;
+
+		public byte FigureC;
+		public byte FigureD;
 		public byte KnockCount;
 		private byte __unknown12;
 		private byte __unknown13;
@@ -50,7 +55,7 @@ namespace Aura.Shared.Mabi.Structs
 	public struct ItemOptionInfo
 	{
 		[FieldOffset(0)]
-		public byte Flag;
+		public ItemFlags Flags;
 		[FieldOffset(1)]
 		public byte __unknown15;
 		[FieldOffset(2)]
@@ -79,14 +84,14 @@ namespace Aura.Shared.Mabi.Structs
 		public ushort AttackMax;
 
 		[FieldOffset(32)]
-		public ushort WAttackMin;
+		public ushort InjuryMin;
 		[FieldOffset(34)]
-		public ushort WAttackMax;
+		public ushort InjuryMax;
 
 		[FieldOffset(36)]
 		public byte Balance;
 		[FieldOffset(37)]
-		public byte Critical;
+		public sbyte Critical;
 		[FieldOffset(38)]
 		public byte __unknown24;
 		[FieldOffset(39)]
@@ -120,9 +125,9 @@ namespace Aura.Shared.Mabi.Structs
 		public int Grade;
 
 		[FieldOffset(60)]
-		public short Prefix;
+		public ushort Prefix;
 		[FieldOffset(62)]
-		public short Suffix;
+		public ushort Suffix;
 
 		[FieldOffset(64)]
 		public short Elemental;

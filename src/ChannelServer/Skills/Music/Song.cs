@@ -23,14 +23,30 @@ namespace Aura.Channel.Skills.Music
 	/// Prepare starts the singing, complete is sent once it's over.
 	/// </remarks>
 	[Skill(SkillId.Song)]
-	public class SongSkillHandler : PlayingInstrumentHandler
+	public class Song : PlayingInstrument
 	{
-		private const int RandomSongScoreMin = 2001, RandomSongScoreMax = 2052;
+		/// <summary>
+		/// Minimum random score id.
+		/// </summary>
+		private const int RandomSongScoreMin = 2001;
 
+		/// <summary>
+		/// Maximum random score id.
+		/// </summary>
+		private const int RandomSongScoreMax = 2052;
+
+		/// <summary>
+		/// Subscribes skill to events required for training.
+		/// </summary>
 		public override void Init()
 		{
 		}
 
+		/// <summary>
+		/// Cancels skill.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <param name="skill"></param>
 		public override void Cancel(Creature creature, Skill skill)
 		{
 			base.Cancel(creature, skill);

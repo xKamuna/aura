@@ -109,8 +109,11 @@ namespace Aura.Shared.Network
 		public const int NpcTalkStartR = 0x55F1;
 		public const int NpcTalkEnd = 0x55F2;
 		public const int NpcTalkEndR = 0x55F3;
+		public const int NpcTalkEgo = 0x55F4;
+		public const int NpcTalkEgoR = 0x55F5;
 		public const int NpcTalkPartner = 0x55F8;
 		public const int NpcTalkPartnerR = 0x55F9;
+		public const int ItemBlessed = 0x5BD8;
 		public const int ItemMove = 0x59D8;
 		public const int ItemMoveR = 0x59D9;
 		public const int ItemPickUp = 0x59DA;
@@ -130,6 +133,8 @@ namespace Aura.Shared.Network
 		public const int ItemAmount = 0x59EA;
 		public const int UseItem = 0x59EB;
 		public const int UseItemR = 0x59EC;
+		public const int GiftItem = 0x59EF;
+		public const int GiftItemR = 0x59F0;
 		public const int UnequipBag = 0x59F4;
 		public const int UnequipBagR = 0x59F5;
 
@@ -148,8 +153,11 @@ namespace Aura.Shared.Network
 		public const int ItemStateChangeR = 0x5BD1;
 		public const int ItemUpdate = 0x5BD4;
 		public const int ItemDurabilityUpdate = 0x5BD5;
+		public const int ItemMaxDurabilityUpdate = 0x5BD6;
 		public const int ItemStateChanged = 0x5BD9;
 		public const int ItemExpUpdate = 0x5BDA;
+		public const int ItemRepairResult = 0x5BDB;
+		public const int ItemUpgradeResult = 0x5BDC;
 		public const int ViewEquipment = 0x5BDF;
 		public const int ViewEquipmentR = 0x5BE0;
 		public const int OptionSet = 0x5BE7;
@@ -181,6 +189,7 @@ namespace Aura.Shared.Network
 		public const int Land = 0x65AB;
 		public const int Landing = 0x65AC;
 		public const int CanLand = 0x65AD;
+		public const int SawItemNotification = 0x65D7; // [190100, NA200 (2015-01-15)]
 		public const int SkillInfo = 0x6979;
 		public const int SkillTrainingUp = 0x697C;
 		public const int SkillAdvance = 0x697E;
@@ -189,6 +198,7 @@ namespace Aura.Shared.Network
 		public const int SkillReady = 0x6983;
 		public const int SkillUse = 0x6986;
 		public const int SkillComplete = 0x6987;
+		public const int SkillCompleteUnk = 0x6988; // used in gathering fail
 		public const int SkillCancel = 0x6989;
 		public const int SkillStart = 0x698A;
 		public const int SkillStop = 0x698B;
@@ -228,6 +238,21 @@ namespace Aura.Shared.Network
 		public const int ClearNpcShop = 0x7158; // Empties tabs
 		public const int AddToNpcShop = 0x7159; // Adds items while shop is open, works like open
 		public const int OpenNpcShop = 0x715E;
+		public const int RequestBankTabs = 0x7211;
+		public const int OpenBank = 0x7212;
+		public const int CloseBank = 0x7215;
+		public const int CloseBankR = 0x7216;
+		public const int BankWithdrawItem = 0x7217;
+		public const int BankWithdrawItemR = 0x7218;
+		public const int BankDepositItem = 0x7219;
+		public const int BankDepositItemR = 0x721A;
+		public const int BankDepositGold = 0x721B;
+		public const int BankDepositGoldR = 0x721C;
+		public const int BankWithdrawGold = 0x721D;
+		public const int BankWithdrawGoldR = 0x721E;
+		public const int BankUpdateGold = 0x721F;
+		public const int BankAddItem = 0x7220;
+		public const int BankRemoveItem = 0x7221;
 		public const int OpenMail = 0x7242;
 		public const int CloseMail = 0x7243;
 		public const int ConfirmMailRecipent = 0x7244;
@@ -269,9 +294,9 @@ namespace Aura.Shared.Network
 		public const int CompleteQuestR = 0x8CA4;
 		public const int GiveUpQuest = 0x8CA5;
 		public const int GiveUpQuestR = 0x8CA6;
-		public const int QuestStartPTJ = 0x8D68; // ?
-		public const int QuestEndPTJ = 0x8D69; // ?
-		public const int QuestUpdatePTJ = 0x8D6A;
+		public const int QuestStartPtj = 0x8D68;
+		public const int QuestEndPtj = 0x8D69;
+		public const int QuestUpdatePtj = 0x8D6A;
 		public const int PartyCreate = 0x8E94;
 		public const int PartyCreateR = 0x8E95;
 		public const int PartyCreateUpdate = 0x8E96;
@@ -365,6 +390,8 @@ namespace Aura.Shared.Network
 		public const int AgeUpEffect = 0x9858;
 
 		public const int ConditionUpdate = 0xA028;
+		public const int CollectAnimation = 0xA415;
+		public const int CollectAnimationCancel = 0xA416;
 		public const int DyePaletteReq = 0xA418;
 		public const int DyePaletteReqR = 0xA419;
 		public const int DyePickColor = 0xA41A;
@@ -377,6 +404,7 @@ namespace Aura.Shared.Network
 		public const int MoonGateMap = 0xA42D;
 		public const int MoonGateUse = 0xA42E;
 		public const int MoonGateUseR = 0xA42F;
+		public const int MusicEventInform = 0xA431;
 		public const int ItemShopInfo = 0xA436;
 		public const int PartyWindowUpdate = 0xA43C;
 		public const int ContinentWarpCoolDown = 0xA43D;
@@ -441,6 +469,9 @@ namespace Aura.Shared.Network
 		public const int ShamalaTransformation = 0xAB1D;
 		public const int ShamalaTransformationEnd = 0xAB1E;
 		public const int ShamalaTransformationEndR = 0xAB1F;
+
+		// [190100, NA200 (2015-01-15)]
+		public const int ItemMagnet = 0xABAB;
 
 		public const int NpcTalk = 0x13882;
 		public const int NpcTalkSelect = 0x13883;

@@ -157,6 +157,11 @@ namespace Aura.Shared.Mabi.Const
 		SimultaneousHit = 0x06,
 
 		/// <summary>
+		/// Alternative target type for Counter? (0x13)
+		/// </summary>
+		CounteredHit2 = 0x13,
+
+		/// <summary>
 		/// Smash/Counter (0x32)
 		/// </summary>
 		HardHit = 0x32,
@@ -186,10 +191,4 @@ namespace Aura.Shared.Mabi.Const
 
 		//DefendedHit = 0x73, // ?
 	}
-
-	public enum CombatStunAttacker { VeryFast = 450, Fast = 520, Normal = 600, Slow = 800, VerySlow = 1000 }
-	public enum CombatStunTarget { VeryFast = 1200, Fast = 1700, Normal = 2000, Slow = 2800, VerySlow = 3000 }
-
-	public enum CombatKnockbackStunAttacker { VeryFast = 2500, Fast = 2500, Normal = 2500, Slow = 2500, VerySlow = 2500 }
-	public enum CombatKnockbackStunTarget { VeryFast = 3000, Fast = 3000, Normal = 3000, Slow = 3000, VerySlow = 3000 }
 }

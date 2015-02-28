@@ -8,36 +8,45 @@ public class FoxAi : AiScript
 {
 	public FoxAi()
 	{
-		SetAggroType(AggroType.Careful);
-		Hates("/pc/", "/pet/");
+		Doubts("/pc/", "/pet/");
 		Hates("/chicken/");
+		
+		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 
 	protected override IEnumerable Idle()
 	{
 		Do(Wander());
-		Do(Wait(3000, 10000));
+		Do(Wait(2000, 5000));
 	}
 	
 	protected override IEnumerable Alert()
 	{
-		// 30% chance to circle
-		// 10% chance to active defense
-		switch(Random(10))
-		{
-			case 0:
-			case 1:  
-			case 2:  Do(Circle(400, 1000, 5000)); break;
-			case 9:  Do(Say("Defense!")); break;
-			default: break;
-		}
-			
-		Do(Wait(6000, 8000));
+		if(Random() < 50)
+			Do(PrepareSkill(SkillId.Defense));
+		Do(Circle(400, 1000, 5000));
+		Do(Wait(2000, 5000));
+		Do(CancelSkill());
 	}
 	
 	protected override IEnumerable Aggro()
 	{
+		if(Random() < 50)
+			Do(PrepareSkill(SkillId.Defense));
+		else
+			Do(Attack());
+			
+		if(Random() < 50)
+			Do(Circle(400, 1000, 5000));
+		else
+			Do(Wait(3000));
+		
+		Do(CancelSkill());
+	}
+	
+	private IEnumerable OnDefenseHit()
+	{
 		Do(Attack());
-		Do(Wait(3000, 6000));
+		Do(Wait(3000));
 	}
 }

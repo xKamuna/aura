@@ -5,6 +5,7 @@ using Aura.Channel.Network;
 using Aura.Channel.Network.Sending;
 using Aura.Channel.World.Entities;
 using Aura.Channel.World.Entities.Creatures;
+using Aura.Channel.World.Weather;
 using Aura.Data;
 using Aura.Data.Database;
 using Aura.Shared;
@@ -49,10 +50,11 @@ namespace Aura.Channel.Util
 			Add(50, 50, "warp", "<region> [x] [y]", HandleWarp);
 			Add(50, 50, "jump", "[x] [y]", HandleWarp);
 			Add(50, 50, "item", "<id|name> [amount|color1 [color2 [color 3]]]", HandleItem);
+			Add(50, 50, "ego", "<item id> <ego name> <ego race> [color1 [color2 [color 3]]]", HandleEgo);
 			Add(50, 50, "skill", "<id> [rank]", HandleSkill);
 			Add(50, 50, "title", "<id>", HandleTitle);
 			Add(50, 50, "speed", "[increase]", HandleSpeed);
-			Add(50, 50, "spawn", "<race> [amount]", HandleSpawn);
+			Add(50, 50, "spawn", "<race> [amount [title]]", HandleSpawn);
 			Add(50, 50, "ap", "<amount>", HandleAp);
 			Add(50, -1, "gmcp", "", HandleGmcp);
 			Add(50, 50, "card", "<id>", HandleCard);
@@ -67,6 +69,11 @@ namespace Aura.Channel.Util
 			Add(50, 50, "allskills", "", HandleAllSkills);
 			Add(50, 50, "alltitles", "", HandleAllTitles);
 			Add(50, 50, "gold", "<amount>", HandleGold);
+			Add(50, 50, "favor", "<npc name> [amount]", HandleFavor);
+			Add(50, 50, "stress", "<npc name> [amount]", HandleStress);
+			Add(50, 50, "memory", "<npc name> [amount]", HandleMemory);
+			Add(50, 50, "weather", "[0.0~2.0|clear|rain|storm|type1~type12]", HandleWeather);
+			Add(50, 50, "telewalk", "", HandleTeleWalk);
 
 			// Admins
 			Add(99, 99, "variant", "<xml_file>", HandleVariant);
@@ -141,6 +148,7 @@ namespace Aura.Channel.Util
 
 			// Parse arguments
 			var args = this.ParseLine(message);
+			args[0] = args[0].TrimStart(ChannelServer.Instance.Conf.Commands.Prefix);
 
 			var sender = creature;
 			var target = creature;
@@ -388,6 +396,13 @@ namespace Aura.Channel.Util
 				return CommandResult.Fail;
 			}
 
+			// Check for egos
+			if (itemData.HasTag("/ego_weapon/"))
+			{
+				Send.ServerMessage(sender, Localization.Get("Egos can't be created with 'item', use 'ego' instead."));
+				return CommandResult.Fail;
+			}
+
 			var item = new Item(itemData.Id);
 
 			// Check amount for stackable items
@@ -407,44 +422,16 @@ namespace Aura.Channel.Util
 			// Parse colors
 			else if (itemData.StackType != StackType.Stackable && args.Count > 2)
 			{
-				for (int i = 0; i < 3; ++i)
+				uint color1, color2, color3;
+				if (!TryParseColorsFromArgs(args, 2, out color1, out color2, out color3))
 				{
-					if (args.Count < 3 + i)
-						break;
-
-					var sColor = args[2 + i];
-					uint color = 0;
-
-					// Hex color
-					if (sColor.StartsWith("0x"))
-					{
-						if (!uint.TryParse(sColor.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out color))
-						{
-							Send.ServerMessage(sender, Localization.Get("Invalid hex color '{0}'."), sColor);
-							return CommandResult.Fail;
-						}
-					}
-					else
-					{
-						switch (sColor)
-						{
-							case "0":
-							case "black": color = 0x00000000; break;
-							case "f":
-							case "white": color = 0xFFFFFFFF; break;
-							default:
-								Send.ServerMessage(sender, Localization.Get("Unknown color '{0}'."), sColor);
-								return CommandResult.Fail;
-						}
-					}
-
-					switch (i)
-					{
-						case 0: item.Info.Color1 = color; break;
-						case 1: item.Info.Color2 = color; break;
-						case 2: item.Info.Color3 = color; break;
-					}
+					Send.ServerMessage(sender, Localization.Get("Invalid or unknown color."));
+					return CommandResult.InvalidArgument;
 				}
+
+				item.Info.Color1 = color1;
+				item.Info.Color2 = color2;
+				item.Info.Color3 = color3;
 			}
 
 			// Create new pockets for bags
@@ -770,6 +757,10 @@ namespace Aura.Channel.Util
 			if (args.Count > 2 && !int.TryParse(args[2], out amount))
 				return CommandResult.InvalidArgument;
 
+			ushort titleId = 30011;
+			if (args.Count > 3 && !ushort.TryParse(args[3], out titleId))
+				return CommandResult.InvalidArgument;
+
 			var targetPos = target.GetPosition();
 			for (int i = 0; i < amount; ++i)
 			{
@@ -777,6 +768,12 @@ namespace Aura.Channel.Util
 				var y = (int)(targetPos.Y + Math.Cos(i) * i * 20);
 
 				var creature = ChannelServer.Instance.ScriptManager.Spawn(raceId, target.RegionId, x, y, -1, true, true);
+
+				if (titleId != 0)
+				{
+					creature.Titles.Enable(titleId);
+					creature.Titles.ChangeTitle(titleId, false);
+				}
 			}
 
 			Send.ServerMessage(sender, Localization.Get("Creatures spawned."));
@@ -1143,7 +1140,7 @@ namespace Aura.Channel.Util
 		{
 			// List of "working" skills
 			var listOfSkills = new SkillId[] {
-				SkillId.Smash, SkillId.Defense,
+				SkillId.Smash, SkillId.Defense, SkillId.FinalHit, SkillId.Counterattack,
 				SkillId.Rest,
 				SkillId.ManaShield, 
 				SkillId.Composing, SkillId.PlayingInstrument, SkillId.Song,
@@ -1230,6 +1227,285 @@ namespace Aura.Channel.Util
 			Send.SystemMessage(sender, Localization.Get("Spawned {0:n0}g."), amount);
 			if (sender != target)
 				Send.SystemMessage(target, Localization.Get("{0} gave you {1:n0}g."), sender.Name, amount);
+
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleFavor(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			if (args.Count < 2)
+				return CommandResult.InvalidArgument;
+
+			var name = args[1];
+			var npc = ChannelServer.Instance.World.GetNpc(name);
+			if (npc == null)
+			{
+				Send.SystemMessage(sender, Localization.Get("NPC '{0}' doesn't exist."), name);
+				return CommandResult.Fail;
+			}
+
+			int favor = npc.GetFavor(target);
+
+			if (args.Count < 3)
+			{
+				Send.SystemMessage(sender, Localization.Get("Favor of {0}: {1}"), name, favor);
+				return CommandResult.Okay;
+			}
+
+			int amount;
+			if (!int.TryParse(args[2], out amount))
+				return CommandResult.InvalidArgument;
+
+			favor = npc.SetFavor(target, amount);
+
+			Send.SystemMessage(sender, Localization.Get("Changed favor for {0}, new value: {1}"), name, favor);
+			if (sender != target)
+				Send.SystemMessage(target, Localization.Get("{2} changed {0}'s favor towards you, new value: {1}"), name, favor, sender.Name);
+
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleStress(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			if (args.Count < 2)
+				return CommandResult.InvalidArgument;
+
+			var name = args[1];
+			var npc = ChannelServer.Instance.World.GetNpc(name);
+			if (npc == null)
+			{
+				Send.SystemMessage(sender, Localization.Get("NPC '{0}' doesn't exist."), name);
+				return CommandResult.Fail;
+			}
+
+			int stress = npc.GetStress(target);
+
+			if (args.Count < 3)
+			{
+				Send.SystemMessage(sender, Localization.Get("Stress of {0}: {1}"), name, stress);
+				return CommandResult.Okay;
+			}
+
+			int amount;
+			if (!int.TryParse(args[2], out amount))
+				return CommandResult.InvalidArgument;
+
+			stress = npc.SetStress(target, amount);
+
+			Send.SystemMessage(sender, Localization.Get("Changed stress for {0}, new value: {1}"), name, stress);
+			if (sender != target)
+				Send.SystemMessage(target, Localization.Get("{2} changed {0}'s stress towards you, new value: {1}"), name, stress, sender.Name);
+
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleMemory(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			if (args.Count < 2)
+				return CommandResult.InvalidArgument;
+
+			var name = args[1];
+			var npc = ChannelServer.Instance.World.GetNpc(name);
+			if (npc == null)
+			{
+				Send.SystemMessage(sender, Localization.Get("NPC '{0}' doesn't exist."), name);
+				return CommandResult.Fail;
+			}
+
+			int memory = npc.GetMemory(target);
+
+			if (args.Count < 3)
+			{
+				Send.SystemMessage(sender, Localization.Get("Memory of {0}: {1}"), name, memory);
+				return CommandResult.Okay;
+			}
+
+			int amount;
+			if (!int.TryParse(args[2], out amount))
+				return CommandResult.InvalidArgument;
+
+			memory = npc.SetMemory(target, amount);
+
+			Send.SystemMessage(sender, Localization.Get("Changed memory for {0}, new value: {1}"), name, memory);
+			if (sender != target)
+				Send.SystemMessage(target, Localization.Get("{2} changed how well {0} remembers you, new value: {1}"), name, memory, sender.Name);
+
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleEgo(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			if (args.Count < 4)
+			{
+				Send.SystemMessage(sender, Localization.Get("Ego races:"));
+				foreach (EgoRace race in Enum.GetValues(typeof(EgoRace)))
+					Send.SystemMessage(sender, "{0}: {1}", (byte)race, race);
+
+				return CommandResult.InvalidArgument;
+			}
+
+			// Get item id
+			int itemId;
+			if (!int.TryParse(args[1], out itemId))
+				return CommandResult.InvalidArgument;
+
+			// Get ego race
+			EgoRace egoRace;
+			if (!EgoRace.TryParse(args[3], out egoRace) || (egoRace <= EgoRace.None || egoRace > EgoRace.CylinderF))
+				return CommandResult.InvalidArgument;
+
+			// Check item data
+			var itemData = AuraData.ItemDb.Find(itemId);
+			if (itemData == null)
+			{
+				Send.ServerMessage(sender, Localization.Get("Item '{0}' not found in database."), args[1]);
+				return CommandResult.Fail;
+			}
+
+			// Check for ego weapon
+			if (!itemData.HasTag("/ego_weapon/"))
+			{
+				Send.ServerMessage(sender, Localization.Get("Item doesn't have the 'ego_weapon' tag."));
+				return CommandResult.Fail;
+			}
+
+			// Create item
+			var item = Item.CreateEgo(itemData.Id, egoRace, args[2]);
+
+			// Parse colors
+			if (args.Count > 4)
+			{
+				uint color1, color2, color3;
+				if (!TryParseColorsFromArgs(args, 4, out color1, out color2, out color3))
+				{
+					Send.ServerMessage(sender, Localization.Get("Invalid or unknown color."));
+					return CommandResult.InvalidArgument;
+				}
+
+				item.Info.Color1 = color1;
+				item.Info.Color2 = color2;
+				item.Info.Color3 = color3;
+			}
+
+			// Add item
+			if (target.Inventory.Add(item, Pocket.Temporary))
+			{
+				if (sender != target)
+					Send.ServerMessage(target, Localization.Get("Ego '{0}' has been spawned by '{1}'."), itemData.Name, sender.Name);
+				Send.ServerMessage(sender, Localization.Get("Ego '{0}' has been spawned."), itemData.Name);
+				return CommandResult.Okay;
+			}
+			else
+			{
+				Send.ServerMessage(sender, Localization.Get("Failed to spawn ego."));
+				return CommandResult.Fail;
+			}
+		}
+
+		private static bool TryParseColorsFromArgs(IList<string> args, int offset, out uint color1, out uint color2, out uint color3)
+		{
+			color1 = 0;
+			color2 = 0;
+			color3 = 0;
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (args.Count < offset + 1 + i)
+					break;
+
+				var sColor = args[offset + i];
+				uint color = 0;
+
+				// Hex color
+				if (sColor.StartsWith("0x"))
+				{
+					if (!uint.TryParse(sColor.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out color))
+						return false;
+				}
+				else
+				{
+					switch (sColor)
+					{
+						case "0":
+						case "black": color = 0x00000000; break;
+						case "f":
+						case "white": color = 0xFFFFFFFF; break;
+						default:
+							return false;
+					}
+				}
+
+				switch (i)
+				{
+					case 0: color1 = color; break;
+					case 1: color2 = color; break;
+					case 2: color3 = color; break;
+				}
+			}
+
+			return true;
+		}
+
+		private CommandResult HandleWeather(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			var weather = ChannelServer.Instance.Weather.GetWeather(target.RegionId);
+
+			if (args.Count == 1)
+			{
+				if (weather == null)
+					Send.ServerMessage(sender, Localization.Get("No weather specified for your region."));
+				else
+					Send.ServerMessage(sender, Localization.Get("Current weather: {0}"), weather);
+
+				return CommandResult.InvalidArgument;
+			}
+
+			if (args[1].StartsWith("type"))
+			{
+				Send.ServerMessage(sender, Localization.Get("Changing weather to table (typeX) requires a relog."));
+
+				ChannelServer.Instance.Weather.SetProviderAndUpdate(target.RegionId, new WeatherProviderTable(target.RegionId, args[1]));
+			}
+			else
+			{
+				float val;
+				if (!float.TryParse(args[1], out val))
+				{
+					switch (args[1])
+					{
+						case "clear": val = 0.5f; break;
+						case "clouds": val = 1.5f; break;
+						case "rain": val = 1.95f; break;
+						case "storm": val = 2.0f; break;
+
+						default: return CommandResult.InvalidArgument;
+					}
+				}
+
+				ChannelServer.Instance.Weather.SetProviderAndUpdate(target.RegionId, new WeatherProviderConstant(target.RegionId, val));
+			}
+
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleTeleWalk(ChannelClient client, Creature sender, Creature target, string message, IList<string> args)
+		{
+			if (target.Vars.Temp["telewalk"] == null)
+			{
+				target.Vars.Temp["telewalk"] = true;
+
+				if (sender != target)
+					Send.ServerMessage(target, Localization.Get("'{0}' has enabled telewalk for you."), sender.Name);
+				Send.ServerMessage(sender, Localization.Get("Telewalk enabled."));
+			}
+			else
+			{
+				target.Vars.Temp["telewalk"] = null;
+
+				if (sender != target)
+					Send.ServerMessage(target, Localization.Get("'{0}' has disabled telewalk for you."), sender.Name);
+				Send.ServerMessage(sender, Localization.Get("Telewalk disabled."));
+			}
 
 			return CommandResult.Okay;
 		}

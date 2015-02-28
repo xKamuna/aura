@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Aura development team - Licensed under GNU GPL
 // For more information, see license file in the main folder
 
+using System.Collections.Generic;
 using System.Threading;
 using Aura.Shared.Mabi.Const;
 using Aura.Channel.Scripting.Scripts;
 using Aura.Shared.Util;
-using Aura.Channel.Scripting;
 using System;
 using Aura.Channel.Network.Sending;
 using Aura.Channel.World.Dungeons;
@@ -14,19 +14,49 @@ namespace Aura.Channel.World.Entities
 {
 	public class NPC : Creature
 	{
+		/// <summary>
+		/// Unique entity id increased and used for each NPC.
+		/// </summary>
 		private static long _npcId = MabiId.Npcs;
 
-		public NpcScript Script { get; set; }
+		/// <summary>
+		/// Type of the NpcScript used by the NPC.
+		/// </summary>
+		public Type ScriptType { get; set; }
+
+		/// <summary>
+		/// AI controlling the NPC
+		/// </summary>
 		public AiScript AI { get; set; }
+
+		/// <summary>
+		/// Creature spawn id, used for respawning.
+		/// </summary>
 		public int SpawnId { get; set; }
+
+		/// <summary>
+		/// List of greetings the NPC uses in conversations.
+		/// </summary>
+		public SortedList<int, List<string>> Greetings { get; set; }
+
+		/// <summary>
+		/// NPCs preferences regarding gifts.
+		/// </summary>
+		public GiftWeightInfo GiftWeights { get; set; }
 
 		/// <summary>
 		/// Location the NPC was spawned at.
 		/// </summary>
 		public Location SpawnLocation { get; set; }
 
+		/// <summary>
+		/// Custom portrait in dialog.
+		/// </summary>
 		public string DialogPortrait { get; set; }
 
+		/// <summary>
+		/// Creates new NPC
+		/// </summary>
 		public NPC()
 		{
 			this.EntityId = Interlocked.Increment(ref _npcId);
@@ -38,8 +68,13 @@ namespace Aura.Channel.World.Entities
 			this.RegionId = 0;
 			this.Life = this.LifeMaxBase = 1000;
 			this.Color1 = this.Color2 = this.Color2 = 0x808080;
+			this.GiftWeights = new GiftWeightInfo();
+			this.Greetings = new SortedList<int, List<string>>();
 		}
 
+		/// <summary>
+		/// Disposes AI.
+		/// </summary>
 		public override void Dispose()
 		{
 			base.Dispose();
@@ -48,6 +83,10 @@ namespace Aura.Channel.World.Entities
 				this.AI.Dispose();
 		}
 
+		/// <summary>
+		/// Loads default information from race data.
+		/// </summary>
+		/// <param name="fullyFunctional">Fully functional creatures have an inv, regens, etc.</param>
 		public override void LoadDefault(bool fullyFunctional = true)
 		{
 			base.LoadDefault(fullyFunctional);
@@ -125,6 +164,11 @@ namespace Aura.Channel.World.Entities
 			return true;
 		}
 
+		/// <summary>
+		/// Returns whether the NPC can target the given creature.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <returns></returns>
 		public override bool CanTarget(Creature creature)
 		{
 			if (!base.CanTarget(creature))
@@ -138,6 +182,10 @@ namespace Aura.Channel.World.Entities
 			return true;
 		}
 
+		/// <summary>
+		/// Kills NPC, rewarding the killer.
+		/// </summary>
+		/// <param name="killer"></param>
 		public override void Kill(Creature killer)
 		{
 			base.Kill(killer);
@@ -203,6 +251,187 @@ namespace Aura.Channel.World.Entities
 				balance = this.GetRndBalance(weapon);
 
 			return (min + ((max - min) * balance));
+		}
+
+		/// <summary>
+		/// Returns how well the NPC remembers the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <returns></returns>
+		public int GetMemory(Creature other)
+		{
+			// Get NPC memory and last change date
+			var memory = other.Vars.Perm["npc_memory_" + this.Name] ?? 0;
+			var change = other.Vars.Perm["npc_memory_change_" + this.Name];
+
+			// Reduce memory by 1 each day
+			if (change != null && memory > 0)
+			{
+				TimeSpan diff = DateTime.Now - change;
+				memory = Math.Max(0, memory - Math.Floor(diff.TotalDays));
+			}
+
+			return (int)memory;
+		}
+
+		/// <summary>
+		/// Modifies how well the NPC remembers the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New memory value</returns>
+		public int SetMemory(Creature other, int value)
+		{
+			value = Math.Max(0, value);
+
+			other.Vars.Perm["npc_memory_" + this.Name] = value;
+			other.Vars.Perm["npc_memory_change_" + this.Name] = DateTime.Now;
+
+			return value;
+		}
+
+		/// <summary>
+		/// Sets how well the NPC remembers the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New memory value</returns>
+		public int ModifyMemory(Creature other, int value)
+		{
+			return this.SetMemory(other, this.GetMemory(other) + value);
+		}
+
+		/// <summary>
+		/// Returns favor of the NPC towards the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <returns></returns>
+		public int GetFavor(Creature other)
+		{
+			// Get NPC favor and last change date
+			var favor = other.Vars.Perm["npc_favor_" + this.Name] ?? 0;
+			var change = other.Vars.Perm["npc_favor_change_" + this.Name];
+
+			// Reduce favor by 1 each hour
+			if (change != null && favor > 0)
+			{
+				TimeSpan diff = DateTime.Now - change;
+				favor = Math.Max(0, favor - Math.Floor(diff.TotalHours));
+			}
+
+			return (int)favor;
+		}
+
+		/// <summary>
+		/// Sets favor of the NPC towards the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New favor value</returns>
+		public int SetFavor(Creature other, int value)
+		{
+			other.Vars.Perm["npc_favor_" + this.Name] = value;
+			other.Vars.Perm["npc_favor_change_" + this.Name] = DateTime.Now;
+
+			return value;
+		}
+
+		/// <summary>
+		/// Modifies favor of the NPC towards the other creature.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New favor value</returns>
+		public int ModifyFavor(Creature other, int value)
+		{
+			return this.SetFavor(other, this.GetFavor(other) + value);
+		}
+
+		/// <summary>
+		/// Gets how much the other creature is stressing the NPC.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <returns></returns>
+		public int GetStress(Creature other)
+		{
+			// Get NPC stress and last change date
+			var stress = other.Vars.Perm["npc_stress_" + this.Name] ?? 0;
+			var change = other.Vars.Perm["npc_stress_change_" + this.Name];
+
+			// Reduce stress by 1 each minute
+			if (change != null && stress > 0)
+			{
+				TimeSpan diff = DateTime.Now - change;
+				stress = Math.Max(0, stress - Math.Floor(diff.TotalMinutes));
+			}
+
+			return (int)stress;
+		}
+
+		/// <summary>
+		/// Sets how much the other creature is stressing the NPC.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New stress value</returns>
+		public int SetStress(Creature other, int value)
+		{
+			value = Math.Max(0, value);
+
+			other.Vars.Perm["npc_stress_" + this.Name] = value;
+			other.Vars.Perm["npc_stress_change_" + this.Name] = DateTime.Now;
+
+			return value;
+		}
+
+		/// <summary>
+		/// Modifies how much the other creature is stressing the NPC.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="value"></param>
+		/// <returns>New stress value</returns>
+		public int ModifyStress(Creature other, int value)
+		{
+			return this.SetStress(other, this.GetStress(other) + value);
+		}
+
+		/// <summary>
+		/// TODO: Move somewhere? =/
+		/// </summary>
+		public class GiftWeightInfo
+		{
+			public float Adult { get; set; }
+			public float Anime { get; set; }
+			public float Beauty { get; set; }
+			public float Individuality { get; set; }
+			public float Luxury { get; set; }
+			public float Maniac { get; set; }
+			public float Meaning { get; set; }
+			public float Rarity { get; set; }
+			public float Sexy { get; set; }
+			public float Toughness { get; set; }
+			public float Utility { get; set; }
+
+			public int CalculateScore(Item gift)
+			{
+				var score = 0f;
+
+				var taste = gift.Data.Taste;
+
+				score += this.Adult * taste.Adult;
+				score += this.Anime * taste.Anime;
+				score += this.Beauty * taste.Beauty;
+				score += this.Individuality * taste.Individuality;
+				score += this.Luxury * taste.Luxury;
+				score += this.Maniac * taste.Maniac;
+				score += this.Meaning * taste.Meaning;
+				score += this.Rarity * taste.Rarity;
+				score += this.Sexy * taste.Sexy;
+				score += this.Toughness * taste.Toughness;
+				score += this.Utility * taste.Utility;
+
+				return (int)score;
+			}
 		}
 	}
 }

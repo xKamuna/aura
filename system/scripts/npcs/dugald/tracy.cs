@@ -51,7 +51,7 @@ public class TracyScript : NpcScript
 			case "@talk":
 				Msg("What was your name?<br/>I think... you were the one snickering at my face before...");
 				await StartConversation();
-				return;
+				break;
 				
 			case "@shop":
 				Msg("You need something?");
@@ -61,18 +61,11 @@ public class TracyScript : NpcScript
 			case "@upgrade":
 				Msg("Somebody told you that modified items are good, right?<br/>Well, if <username/> needs a favor, I guess I must help.<br/>Show me what you want to modify.");
 				Msg("(Unimplemented)");
-				switch(await Select())
-				{
-					case "@end":
-						Msg("Just ask me if you want something modified, man! Anytime, haha!");
-						break;
-				}
-				return;
-
-			default:
-				Msg("...");
-				return;
+				// @end: Msg("Just ask me if you want something modified, man! Anytime, haha!");
+				break;
 		}
+		
+		End("Goodbye, <npcname/>. I'll see you later!");
 	}
 	
 	protected override async Task Keywords(string keyword)
@@ -80,13 +73,24 @@ public class TracyScript : NpcScript
 		switch (keyword)
 		{
 			case "personal_info":
-				Msg("Hey, hey. You're thinking about my name again?<br/>I don't like it myself.");
-				Msg("Stop grinning. Don't give me that look any more. It's really disturbing.");
+				if(Memory == 1)
+				{
+					Msg("Hey, hey. You're thinking about my name again?<br/>I don't like it myself.");
+					Msg("Stop grinning. Don't give me that look any more. It's really disturbing.");
+					ModifyRelation(1, 0, Random(2));
+				}
+				else
+				{
+					Msg(FavorExpression(), "Yes, Tracy is my name. The lumberjack...<br/>Hey! Why are you giggling while you ask?");
+					Msg("...Ha! <username/>... Your name sounds no better than mine.<br/>Actually, yours is even worse!");
+					ModifyRelation(Random(2), 0, Random(2));
+				}
 				break;
 
 			case "rumor":
 				Msg("Looks like the people who talked to me before<br/>don't really like my speaking style...<br/>Let me say something. These people just show up and start pestering me with all these silly questions,<br/>and I'm supposed to be polite to them all the time?");
 				Msg("What do you think? What?<br/>You don't like how I speak either?");
+				ModifyRelation(Random(2), 0, Random(2));
 				break;
 
 			case "about_skill":
@@ -253,7 +257,7 @@ public class TracyScript : NpcScript
 				break;
 
 			case "musicsheet":
-				Player.Keywords.Give("shop_misc");
+				GiveKeyword("shop_misc");
 				Msg("Music Scores are sold at the General Shop.<br/>If you have one with you,<br/>you can play the music written on it.");
 				Msg("But what's wrong with those morons<br/>complaining they can't play music with Music Scores<br/>when they don't have any instruments!");
 				break;
@@ -267,6 +271,7 @@ public class TracyScript : NpcScript
 					"What? You want to be a know-it-all?",
 					"Why do you care about all that weird stuff?"
 				);
+				ModifyRelation(0, 0, Random(2));
 				break;
 		}
 	}
