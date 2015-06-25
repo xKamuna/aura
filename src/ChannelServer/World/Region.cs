@@ -728,6 +728,24 @@ namespace Aura.Channel.World
 			}
 		}
 
+		public List<Creature> GetVisibleCreaturesInCone(Creature creature, int radius, int angle)
+		{
+			_creaturesRWLS.EnterReadLock();
+			try
+			{
+				return _creatures.Values.Where(a =>
+				{
+					var targetPosition = a.GetPosition();
+					var creaturePosition = creature.GetPosition();
+					return a != creature && targetPosition.InRange(creaturePosition, radius) && Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(creaturePosition.X, creaturePosition.Y), Mabi.MabiMath.ByteToDirection(creature.Direction), new Mabi.MabiMath.Vector2(targetPosition.X, targetPosition.Y), Mabi.MabiMath.DegreeToRadian(angle), radius) && !a.Conditions.Has(ConditionsA.Invisible);
+                }).ToList();
+			}
+			finally
+			{
+				_creaturesRWLS.ExitReadLock();
+			}
+		}
+
 		/// <summary>
 		///  Spawns prop, sends EntityAppears.
 		/// </summary>

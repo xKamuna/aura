@@ -7,6 +7,59 @@ namespace Aura.Mabi
 {
 	public static class MabiMath
 	{
+		//Vector2 class for holding doubles.
+		public class Vector2
+		{
+			public double X { get; set; }
+			public double Y { get; set; }
+			public Vector2()
+			{
+				X = 0;
+				Y = 0;
+			}
+			public Vector2(double x, double y)
+			{
+				X = x;
+				Y = y;
+			}
+			public double SquareLength()
+			{
+				return X * X + Y * Y;
+			}
+			public double Length()
+			{
+				return Math.Sqrt(SquareLength());
+			}
+			public double Normalize()
+			{
+				double length = Length();
+				double inverseLength = 1.0f / length;
+				X *= inverseLength;
+				Y *= inverseLength;
+				return length;
+			}
+			public double Dot(Vector2 rhs)
+			{
+				return (X * rhs.X + Y * rhs.Y);
+			}
+			/// <summary>
+			/// Checks if a point is inside a cone.
+			/// </summary>
+			public static bool IsPointInsideCone(Vector2 origin, Vector2 direction, Vector2 point, double radianAngle, int maxDistance)
+			{
+				Vector2 distanceVector = new Vector2(point.X - origin.X, point.Y - origin.Y);
+
+				double length = distanceVector.Normalize(); //Returns not the normalized distance vector, but the length of the vector.  A shortcut.
+
+				if (length > maxDistance)
+				{
+					return false;
+				}
+
+				return (direction.Dot(distanceVector) >= Math.Cos(radianAngle));
+			}
+		}
+
 		/// <summary>
 		/// Converts Mabi's byte direction into a radian.
 		/// </summary>
@@ -61,6 +114,13 @@ namespace Aura.Mabi
 		public static float DegreeToRadian(int degree)
 		{
 			return (float)(Math.PI / 180f * degree);
+		}
+
+		public static Vector2 ByteToDirection(byte directionByte)
+		{
+			float theta = ByteToRadian(directionByte); //Direction as radian, just makes the byte go into radian form.  2*pi*r for circumference, 255 because byte goes from 0-255, etc etc.
+			Vector2 directionVector = new Vector2(Math.Cos(theta), Math.Sin(theta));  //Unitized direction vector.  May be optimized to retrieve common values from a Dictionary, so we don't have to use cos and sin (which can be expensive).
+			return directionVector;
 		}
 
 		/// <summary>

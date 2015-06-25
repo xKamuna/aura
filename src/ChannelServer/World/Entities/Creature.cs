@@ -1917,6 +1917,13 @@ namespace Aura.Channel.World.Entities
 			return targetable;
 		}
 
+		public ICollection<Creature> GetTargetableCreaturesInCone(int radius, int angle)
+		{
+			var visible = this.Region.GetVisibleCreaturesInCone(this, radius, angle);
+			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
+			return targetable;
+		}
+
 		/// <summary>
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
