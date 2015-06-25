@@ -129,19 +129,6 @@ namespace Aura.Channel.Skills
 				{
 					var tAction = action as TargetAction;
 
-					/*if(action.SkillId == SkillId.Smash)
-					{
-						if (!action.Creature.IsDead && tAction.Stun > 0)
-						{
-							//Timer for getting back up.
-							System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
-
-							getUpTimer.Elapsed += (sender2, e2) => action.Creature.GetBackUp(sender2, e2, getUpTimer);
-							getUpTimer.Enabled = true;
-							Log.Info("Get Up Timer Enabled");
-						}
-					}*/
-
 					// Mana Shield flag
 					if (tAction.ManaDamage > 0 && tAction.Damage == 0)
 						tAction.Set(TargetOptions.ManaShield);

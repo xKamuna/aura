@@ -40,7 +40,9 @@ namespace Aura.Channel.Network.Handlers
 			{
 				if (creature.GetPosition().InRange(prop.GetPosition(), 1500))
 				{
-					Send.HittingProp(creature, prop.EntityId);
+					var stunTime = Skills.Combat.CombatMastery.GetAttackerStun(creature, creature.Inventory.RightHand, false);
+                    creature.Stun = stunTime;
+					Send.HittingProp(creature, prop.EntityId, stunTime);
 
 					if (prop.Behavior != null)
 					{
