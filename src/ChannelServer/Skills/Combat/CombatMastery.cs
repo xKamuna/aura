@@ -214,7 +214,7 @@ namespace Aura.Channel.Skills.Combat
 				}
 
 				// React to knock back
-				if (tAction.IsKnockBack)
+				if (tAction.IsKnockBack && tAction.Type != CombatActionType.Defended)
 				{
 					attacker.Shove(target, KnockBackDistance);
 
@@ -226,6 +226,13 @@ namespace Aura.Channel.Skills.Combat
 						aAction.Options &= ~AttackerOptions.DualWield;
 
 					
+				}
+				else if(tAction.Type == CombatActionType.Defended)
+				{
+					// Remove dual wield option if last hit doesn't come from
+					// the second weapon.
+					if (cap.MaxHits != cap.Hit)
+						aAction.Options &= ~AttackerOptions.DualWield;
 				}
 		
 
@@ -258,8 +265,8 @@ namespace Aura.Channel.Skills.Combat
 
 				cap.Handle();
 
-				// No second hit if target was knocked back
-				if (tAction.IsKnockBack)
+				// No second hit if target was knocked back or defended.
+				if (tAction.IsKnockBack || tAction.Type == CombatActionType.Defended)
 					break;
 			}
 			attacker.AttemptingAttack = false;
