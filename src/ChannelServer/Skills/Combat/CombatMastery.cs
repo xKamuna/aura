@@ -71,7 +71,8 @@ namespace Aura.Channel.Skills.Combat
 
 			// Against Combat Mastery
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
-			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+			Skill finalHit = target.Skills.Get(SkillId.FinalHit);
+			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.ActiveSkill == finalHit) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
 			{
 				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.Inventory.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
