@@ -1912,6 +1912,8 @@ namespace Aura.Channel.World.Entities
 
 		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
 		{
+			//var attackerRange = this.RaceData.AttackRange * this.BodyScale;
+			//range -= (int)attackerRange;
 			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
 			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
 			return targetable;

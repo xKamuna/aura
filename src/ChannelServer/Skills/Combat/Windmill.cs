@@ -303,9 +303,6 @@ namespace Aura.Channel.Skills.Combat
 			if (attacker.RightHand != null && attacker.RightHand.Data.WeaponType == 9)
 				range *= knuckleMod;
 
-			var attackerRange = attacker.RaceData.AttackRange * attacker.BodyScale;
-			range -= attackerRange;
-
 			return (int)range;
 		}
 
