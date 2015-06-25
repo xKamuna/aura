@@ -190,7 +190,7 @@ namespace Aura.Channel.World.Entities
 		/// <summary>
 		/// Changes stance and broadcasts update.
 		/// </summary>
-		public bool IsInBattleStance { get { return _battleStance; } set { _battleStance = value; Send.ChangeStance(this); } }
+		public bool IsInBattleStance { get { return _battleStance; } set { _battleStance = value; if (!value) AttemptingAttack = false; Send.ChangeStance(this); } }
 		public Creature Target { get; set; }
 
 		private int _stun;

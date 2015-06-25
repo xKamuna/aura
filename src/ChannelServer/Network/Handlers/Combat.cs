@@ -90,11 +90,15 @@ namespace Aura.Channel.Network.Handlers
 			// Purpose unknown, without this the client doesn't seem to
 			// accept the stun time, you can spam attacks.
 			// This updates the target so that it knows that you're attacking!  It lets you determine when someone is trying to attack. - Kamuna
-			Send.CombatTargetUpdate(creature, targetEntityId);
 			if (targetEntityId == 0)
 			{
-                creature.AttemptingAttack = false;
+				creature.AttemptingAttack = false;
 			}
+			else
+			{
+				creature.AttemptingAttack = true;
+			}
+			Send.CombatTargetUpdate(creature, targetEntityId);
 		}
 
 		/// <summary>
@@ -126,6 +130,14 @@ namespace Aura.Channel.Network.Handlers
 			}
 			if (skill == combatMastery || skill == null)
 			{
+				if (targetEntityId == 0)
+				{
+					creature.AttemptingAttack = false;
+				}
+				else
+				{
+					creature.AttemptingAttack = true;
+				}
 				Send.CombatTargetUpdate(creature, targetEntityId);
 			}
 
