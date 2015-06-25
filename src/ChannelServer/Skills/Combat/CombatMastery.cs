@@ -239,7 +239,11 @@ namespace Aura.Channel.Skills.Combat
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
 				{
+<<<<<<< HEAD
 					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
+=======
+					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && skill.Info.Id != SkillId.FinalHit);
+>>>>>>> 16ec0d4e2d5c7fbe0666ae08c26c93c495d799be
 					tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
 					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
 					{
