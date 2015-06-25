@@ -261,6 +261,12 @@ namespace Aura.Channel.World.Entities
 
 		public bool IsDead { get { return this.Has(CreatureStates.Dead); } }
 		public bool IsStunned { get { return (this.Stun > 0); } }
+		public DateTime AttackDelayTime { get; set; }
+		public bool IsOnAttackDelay { get { return (DateTime.Now < this.AttackDelayTime); } }
+		public SkillId InterceptingSkillId { get; set; }
+        public bool AttemptingAttack { get; set; }
+		public Creature LastKnockedBackBy { get; set; }
+
 
 		public bool WasKnockedBack { get; set; }
 
@@ -328,11 +334,22 @@ namespace Aura.Channel.World.Entities
 		/// Holds the time at which the knock down is over.
 		/// </summary>
 		public DateTime KnockDownTime { get; set; }
+		/// <summary>
+		/// Holds the time at which the invulnerability time is over.
+		/// </summary>
+		public DateTime NotReadyToBeHitTime { get; set; }
 
 		/// <summary>
 		/// Returns true if creature is currently knocked down.
 		/// </summary>
 		public bool IsKnockedDown { get { return (DateTime.Now < this.KnockDownTime); } }
+		/// <summary>
+		/// Returns true if creature is not able to get hit yet.
+		/// </summary>
+		public bool IsNotReadyToBeHit { get { return (DateTime.Now < this.NotReadyToBeHitTime); } }
+
+		public bool IgnoreAttackRange { get; set; }
+
 
 		// Stats
 		// ------------------------------------------------------------------
@@ -1225,11 +1242,13 @@ namespace Aura.Channel.World.Entities
 			var targetRange = target.RaceData.AttackRange * target.BodyScale;
 
 			var result = 156f; // Default found in the client (for reference)
+			//Giant Spiders can't attack properly with this forumla... edited.
 
 			if ((attackerRange < 300 && targetRange < 300) || (attackerRange >= 300 && attackerRange > targetRange))
 				result = ((attackerRange + targetRange) / 2);
 			else
 				result = targetRange;
+			//result = Math.Max(targetRange, attackerRange);
 
 			// A little something extra
 			result += 25;
@@ -1546,8 +1565,15 @@ namespace Aura.Channel.World.Entities
 			var dropped = new HashSet<int>();
 			foreach (var drop in this.Drops.Drops)
 			{
+				if (drop == null)
+					continue;
 				if (rnd.NextDouble() * 100 < drop.Chance * ChannelServer.Instance.Conf.World.DropRate)
 				{
+					if (AuraData.ItemDb.Find(drop.ItemId) == null)
+					{
+						Log.Warning("Creature.Kill: Item '{0}' couldn't be found in database.", drop.ItemId);
+						continue;
+					}
 					// Only drop any item once
 					if (dropped.Contains(drop.ItemId))
 						continue;
@@ -1822,6 +1848,21 @@ namespace Aura.Channel.World.Entities
 			return newPos;
 		}
 
+		public void GetBackUp(object sender, System.Timers.ElapsedEventArgs e, System.Timers.Timer getUpTimer)
+		{
+			getUpTimer.Enabled = false;
+			// Recover from knock back/down after stun ended
+			if (this.WasKnockedBack)
+			{
+				if (!IsMoving)
+				{
+					Send.RiseFromTheDead(this);
+				}
+				this.WasKnockedBack = false;
+			}
+			getUpTimer = null;
+		}
+
 		/// <summary>
 		///  Returns true if creature's race data has the tag.
 		/// </summary>
@@ -1844,7 +1885,13 @@ namespace Aura.Channel.World.Entities
 		{
 			var visible = this.Region.GetVisibleCreaturesInRange(this, range);
 			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
+			return targetable;
+		}
 
+		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
+		{
+			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
+			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
 			return targetable;
 		}
 
@@ -1852,7 +1899,11 @@ namespace Aura.Channel.World.Entities
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
 		/// <param name="creature"></param>
-		public abstract void Aggro(Creature target);
+		public virtual void Aggro(Creature target)
+		{
+			this.IsInBattleStance = true;
+			this.Target = target;
+		}
 
 		/// <summary>
 		/// Disposes creature and removes it from its current region.

@@ -67,7 +67,7 @@ namespace Aura.Web.Controllers
 				Log.Exception(ex, "UiStorageController: Failed to move file.");
 			}
 
-			Log.Info("Character '{0}' uploaded his UI settings.", charId);
+			Log.Info("Character '{0}' uploaded their UI settings.", charId);
 
 			// Success
 			res.Send("1");

@@ -129,6 +129,8 @@ namespace Aura.Channel.Skills.Combat
 			var targets = attacker.Region.GetCreaturesInPolygon(p1, p2, p3, p4);
 			foreach (var target in targets.Where(cr => !cr.IsDead && !cr.Has(CreatureStates.NamedNpc)))
 			{
+				if (target.IsNotReadyToBeHit)
+					continue;
 				var targetPosition = target.GetPosition();
 
 				var tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
@@ -156,7 +158,21 @@ namespace Aura.Channel.Skills.Combat
 
 				// Check death
 				if (target.IsDead)
+				{
 					tAction.Options |= TargetOptions.FinishingKnockDown;
+				}
+				else
+				{
+					if ((TargetOptions.KnockDown & tAction.Options) != 0)
+					{
+						//Timer for getting back up.
+						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+						getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+						getUpTimer.Enabled = true;
+					}
+
+				}
 
 				// Knock back
 				attacker.Shove(target, KnockbackDistance);

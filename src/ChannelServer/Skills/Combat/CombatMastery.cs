@@ -48,15 +48,53 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public CombatSkillResult Use(Creature attacker, Skill skill, long targetEntityId)
 		{
-			if (attacker.IsStunned)
-				return CombatSkillResult.Okay;
+			
 
 			var target = attacker.Region.GetCreature(targetEntityId);
 			if (target == null)
 				return CombatSkillResult.Okay;
 
-			if (!attacker.GetPosition().InRange(target.GetPosition(), attacker.AttackRangeFor(target)))
+			if (target.IsNotReadyToBeHit)
+				return CombatSkillResult.Okay;
+
+			if (attacker.IsStunned || attacker.IsOnAttackDelay)
+				return CombatSkillResult.Okay;
+
+			if (!attacker.GetPosition().InRange(target.GetPosition(), attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)
 				return CombatSkillResult.OutOfRange;
+
+			attacker.IgnoreAttackRange = false;
+
+			Skill smash = target.Skills.Get(SkillId.Smash);
+			if (smash != null && target.Skills.IsReady(SkillId.Smash))
+				attacker.InterceptingSkillId = SkillId.Smash;
+
+			// Against Combat Mastery
+			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
+			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+			{
+				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.Inventory.RightHand, false);
+				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
+				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
+				{
+					target.InterceptingSkillId = SkillId.CombatMastery;
+					target.IgnoreAttackRange = true;
+					var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+					if (skillHandler == null)
+					{
+						Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+						return CombatSkillResult.Okay;
+					}
+					skillHandler.Use(target, combatMastery, attacker.EntityId);
+					return CombatSkillResult.Okay;
+				}
+				else
+				{
+					attacker.InterceptingSkillId = SkillId.CombatMastery;
+				}
+			}
+
+			
 
 			attacker.StopMove();
 			var targetPosition = target.StopMove();
@@ -77,10 +115,39 @@ namespace Aura.Channel.Skills.Combat
 				var weapon = (i == 1 ? rightWeapon : leftWeapon);
 				var weaponIsKnuckle = (weapon != null && weapon.Data.HasTag("/knuckle/"));
 
-				var aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
-				var tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				AttackerAction aAction;
+				TargetAction tAction;
+				if (attacker.InterceptingSkillId == SkillId.Smash)
+				{
+					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
+					aAction.Options |= AttackerOptions.Result;
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);
+					tAction.Options |= TargetOptions.Result;
+					
+				}
+				else
+				{
+					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				}
 
-				var cap = new CombatActionPack(attacker, skill.Info.Id, aAction, tAction);
+				if (attacker.InterceptingSkillId == SkillId.CombatMastery)
+				{
+					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
+					aAction.Options |= AttackerOptions.Result;
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.CombatMastery);
+					tAction.Options |= TargetOptions.Result;
+
+				}
+				else
+				{
+					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				}
+
+				attacker.InterceptingSkillId = SkillId.None;
+
+				var cap = new CombatActionPack(attacker, skill.Info.Id, tAction, aAction);
 				cap.Hit = i;
 				cap.MaxHits = maxHits;
 				cap.PrevId = prevId;
@@ -131,6 +198,8 @@ namespace Aura.Channel.Skills.Combat
 							if (target.IsUnstable && target.Is(RaceStands.KnockBackable))
 								//tAction.Set(tAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
 								tAction.Set(TargetOptions.KnockDown);
+							if(target.Life < 0)
+								tAction.Set(TargetOptions.KnockDown);
 						}
 						else if (!dualWield && !weaponIsKnuckle)
 						{
@@ -155,13 +224,29 @@ namespace Aura.Channel.Skills.Combat
 					// the second weapon.
 					if (cap.MaxHits != cap.Hit)
 						aAction.Options &= ~AttackerOptions.DualWield;
+
+					
 				}
+		
 
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
 				{
-					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit || (!dualWield && !weaponIsKnuckle)));
+					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit/* || (!dualWield && !weaponIsKnuckle)*/) && !target.IsDead);
 					tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
+					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
+					{
+						attacker.AttackDelayTime = DateTime.Now.AddMilliseconds(GetAttackerStun(attacker, weapon, true));
+                    }
+
+					if ((TargetOptions.KnockDown & tAction.Options) != 0)
+					{
+						//Timer for getting back up.
+						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+						getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+						getUpTimer.Enabled = true;
+					}
 				}
 
 				// Second hit doubles stun time for normal hits
@@ -177,7 +262,7 @@ namespace Aura.Channel.Skills.Combat
 				if (tAction.IsKnockBack)
 					break;
 			}
-
+			attacker.AttemptingAttack = false;
 			return CombatSkillResult.Okay;
 		}
 

@@ -129,6 +129,19 @@ namespace Aura.Channel.Skills
 				{
 					var tAction = action as TargetAction;
 
+					/*if(action.SkillId == SkillId.Smash)
+					{
+						if (!action.Creature.IsDead && tAction.Stun > 0)
+						{
+							//Timer for getting back up.
+							System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
+
+							getUpTimer.Elapsed += (sender2, e2) => action.Creature.GetBackUp(sender2, e2, getUpTimer);
+							getUpTimer.Enabled = true;
+							Log.Info("Get Up Timer Enabled");
+						}
+					}*/
+
 					// Mana Shield flag
 					if (tAction.ManaDamage > 0 && tAction.Damage == 0)
 						tAction.Set(TargetOptions.ManaShield);
@@ -177,8 +190,16 @@ namespace Aura.Channel.Skills
 					// Remember knock back/down
 					tAction.Creature.WasKnockedBack = tAction.Has(TargetOptions.KnockBack) || tAction.Has(TargetOptions.KnockDown) || tAction.Has(TargetOptions.Smash);
 
-					if (tAction.Has(TargetOptions.KnockDown))
+					if (tAction.Has(TargetOptions.KnockDown) || tAction.Has(TargetOptions.Smash))
+					{
 						tAction.Creature.KnockDownTime = DateTime.Now.AddMilliseconds(tAction.Stun);
+						tAction.Creature.NotReadyToBeHitTime = DateTime.Now.AddMilliseconds(tAction.Stun*1.05); //1.05 is just a guesstimate, actual official time unknown.
+					}
+
+					if(tAction.Creature.WasKnockedBack)
+					{
+						tAction.Creature.LastKnockedBackBy = this.Attacker;
+                    }
 
 					// Stability meter
 					// TODO: Limit it to "targetees"?

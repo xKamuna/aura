@@ -208,7 +208,7 @@ namespace Aura.Channel.Scripting.Scripts
 				this.SelectState();
 
 				// Stop and clear if stunned
-				if (this.Creature.IsStunned)
+				if (this.Creature.IsStunned || this.Creature.IsOnAttackDelay)
 				{
 					// Clearing causes it to run aggro from beginning again
 					// and again, this should probably be moved to the take
@@ -276,7 +276,11 @@ namespace Aura.Channel.Scripting.Scripts
 			_state = AiState.Idle;
 
 			if (this.Creature.IsInBattleStance)
+			{
 				this.Creature.IsInBattleStance = false;
+				this.Creature.AttemptingAttack = false;
+			}
+			
 
 			if (this.Creature.Target != null)
 			{
@@ -1012,10 +1016,15 @@ namespace Aura.Channel.Scripting.Scripts
 					break;
 
 				// Attack
+				if (!this.Creature.AttemptingAttack)
+				{
+					this.Creature.AttemptingAttack = true;
+				}
 				var result = skillHandler.Use(this.Creature, skill, this.Creature.Target.EntityId);
 				if (result == CombatSkillResult.Okay)
 				{
 					// Stop when max attack count is reached
+					this.Creature.AttemptingAttack = false;
 					if (++i >= count)
 						break;
 

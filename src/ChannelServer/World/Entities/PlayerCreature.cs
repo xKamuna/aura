@@ -221,7 +221,19 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		protected override bool ShouldSurvive(float damage, Creature from, float lifeBefore)
 		{
-			return (lifeBefore >= this.LifeMax / 2);
+			// No surviving once you're in deadly
+			if (lifeBefore < 0)
+				return false;
+
+			if (lifeBefore >= this.LifeMax / 2)
+				return true;
+
+			// Chance = Will/10, capped at 50%
+			// (i.e 80 Will = 8%, 500+ Will = 50%)
+			// Actual formula unknown
+			// Added life proximity to the formula.
+			var chance = Math.Min(50, this.Will / 10 + (LifeMax > 0 ? ((this.Life / this.LifeMax) * 10) : 0));
+			return (RandomProvider.Get().Next(101) < chance);
 		}
 
 		/// <summary>
@@ -308,6 +320,10 @@ namespace Aura.Channel.World.Entities
 		public override void Aggro(Creature target)
 		{
 			this.IsInBattleStance = true;
+			if(this.Target == null)
+			{
+				this.Target = target;
+			}
 		}
 	}
 }

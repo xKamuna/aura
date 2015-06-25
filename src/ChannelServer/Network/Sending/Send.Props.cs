@@ -26,7 +26,7 @@ namespace Aura.Channel.Network.Sending
 
 			var packet = new Packet(Op.HittingProp, creature.EntityId);
 			packet.PutLong(propEntityId);
-			packet.PutInt(2000);
+			packet.PutInt(Skills.Combat.CombatMastery.GetAttackerStun(creature, creature.Inventory.RightHand, false));
 			packet.PutFloat(pos.X);
 			packet.PutFloat(pos.Y);
 

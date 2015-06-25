@@ -1,15 +1,15 @@
 //--- Aura Script -----------------------------------------------------------
-// Rat AI
+// Rat AI (Hardmode)
 //--- Description -----------------------------------------------------------
-// AI for rats.
+// AI for rats (Hardmode).
 //---------------------------------------------------------------------------
 
-[AiScript("rat")]
-public class RatAi : AiScript
+[AiScript("rat_hardmode")]
+public class RatHardModeAi : AiScript
 {
-	public RatAi()
+	public RatHardModeAi()
 	{
-		//Hates("/pc/", "/pet/");
+		Hates("/pc/", "/pet/");
 
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 		On(AiState.Aggro, AiEvent.KnockDown, OnKnockDown);

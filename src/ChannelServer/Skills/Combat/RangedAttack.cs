@@ -133,6 +133,9 @@ namespace Aura.Channel.Skills.Combat
 			if (target == null)
 				return CombatSkillResult.InvalidTarget;
 
+			if (target.IsNotReadyToBeHit)
+				return CombatSkillResult.Okay;
+
 			var targetPos = target.GetPosition();
 			var attackerPos = attacker.GetPosition();
 
@@ -203,6 +206,17 @@ namespace Aura.Channel.Skills.Combat
 					else if (target.Stability < 30)
 					{
 						tAction.Set(TargetOptions.KnockDown);
+						if (!target.IsDead)
+						{
+							if ((TargetOptions.KnockDown & tAction.Options) != 0)
+							{
+								//Timer for getting back up.
+								System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+								getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+								getUpTimer.Enabled = true;
+							}
+						}
 					}
 					// Normal stability reduction
 					else

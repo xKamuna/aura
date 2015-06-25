@@ -89,12 +89,17 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="packet"></param>
 		public void Use(Creature attacker, Skill skill, Packet packet)
 		{
+			if (attacker.IsOnAttackDelay)
+			{
+				Send.SkillUseSilentCancel(attacker);
+				return;
+			}
 			var targetAreaId = packet.GetLong();
 			var unkInt1 = packet.GetInt();
 			var unkInt2 = packet.GetInt();
 
 			var range = this.GetRange(attacker, skill);
-			var targets = attacker.GetTargetableCreaturesInRange(range);
+			var targets = attacker.GetTargetableCreaturesInRangeUsingHitbox(range);
 
 			// Check targets
 			if (targets.Count == 0)
@@ -110,15 +115,45 @@ namespace Aura.Channel.Skills.Combat
 			var aAction = new AttackerAction(CombatActionType.SpecialHit, attacker, skill.Info.Id, targetAreaId);
 			aAction.Set(AttackerOptions.Result);
 
-			cap.Add(aAction);
-
 			var survived = new List<Creature>();
+
+			var skipped = new List<Creature>();
 
 			foreach (var target in targets)
 			{
+				if (target.IsNotReadyToBeHit)
+				{
+					skipped.Add(target);
+					if (skipped.Count == targets.Count)
+					{
+						Send.Notice(attacker, Localization.Get("There isn't a target nearby to use that on."));
+						Send.SkillUseSilentCancel(attacker);
+						return;
+					}
+					else
+					{
+						continue;
+					}
+				}
+
 				target.StopMove();
 
-				var tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				Skill smash = target.Skills.Get(SkillId.Smash);
+				if (smash != null && target.Skills.IsReady(SkillId.Smash))
+					attacker.InterceptingSkillId = SkillId.Smash;
+				TargetAction tAction;
+				if (attacker.InterceptingSkillId == SkillId.Smash && !target.GetPosition().InRange(attacker.GetPosition(), target.AttackRangeFor(attacker)))
+				{
+					aAction.Options |= AttackerOptions.Result;
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);
+					tAction.Options |= TargetOptions.Result;
+
+				}
+				else
+				{
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				}
+				attacker.InterceptingSkillId = SkillId.None;
 				tAction.Delay = 300; // Usually 300, sometimes 350?
 
 				// Calculate damage
@@ -147,7 +182,11 @@ namespace Aura.Channel.Skills.Combat
 
 				// Anger Management
 				if (!target.IsDead)
+				{
 					survived.Add(target);
+				}
+
+				target.IsInBattleStance = true;
 
 				// Stun & knock back
 				aAction.Stun = CombatMastery.GetAttackerStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);
@@ -155,6 +194,168 @@ namespace Aura.Channel.Skills.Combat
 				if (!tAction.Is(CombatActionType.Defended))
 				{
 					tAction.Stun = CombatMastery.GetTargetStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);
+					if (!target.IsDead)
+					{
+						if ((TargetOptions.KnockDown & tAction.Options) != 0)
+						{
+							//Timer for getting back up.
+							System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
+
+							getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+							getUpTimer.Enabled = true;
+						}
+					}
+					target.Stability = Creature.MinStability;
+					attacker.Shove(target, KnockbackDistance);
+				}
+
+				// Add action
+				cap.Add(tAction);
+				cap.Add(aAction);
+			}
+
+			// Only select a random aggro if there is no aggro yet,
+			// WM only aggroes one target at a time.
+			if (survived.Count != 0 && attacker.Region.CountAggro(attacker) < 1)
+			{
+				var rnd = RandomProvider.Get();
+				var aggroTarget = survived.Random();
+				aggroTarget.Aggro(attacker);
+			}
+
+
+
+			// Spin it~
+			Send.UseMotion(attacker, 8, 4);
+
+			cap.Handle();
+
+			Send.SkillUse(attacker, skill.Info.Id, targetAreaId, unkInt1, unkInt2);
+
+			skill.Stacks = 0;
+		}
+
+		public void Use(Creature attacker, Skill skill)
+		{
+			if(attacker.IsOnAttackDelay)
+			{
+				Send.SkillUseSilentCancel(attacker);
+				return;
+			}
+			var attackerPos = attacker.GetPosition();
+            var targetAreaId = 0;
+			var unkInt1 = 0;
+			var unkInt2 = 0;
+
+			var range = this.GetRange(attacker, skill);
+			var targets = attacker.GetTargetableCreaturesInRangeUsingHitbox(range);
+
+			// Check targets
+			if (targets.Count == 0)
+			{
+				Send.Notice(attacker, Localization.Get("There isn't a target nearby to use that on."));
+				Send.SkillUseSilentCancel(attacker);
+				return;
+			}
+
+			// Create actions
+			var cap = new CombatActionPack(attacker, skill.Info.Id);
+
+			var aAction = new AttackerAction(CombatActionType.SpecialHit, attacker, skill.Info.Id, targetAreaId);
+			aAction.Set(AttackerOptions.Result);
+
+			cap.Add(aAction);
+
+			var survived = new List<Creature>();
+
+			var skipped = new List<Creature>();
+
+			foreach (var target in targets)
+			{
+				if (target.IsNotReadyToBeHit)
+				{
+					skipped.Add(target);
+					if (skipped.Count == targets.Count)
+					{
+						Send.Notice(attacker, Localization.Get("There isn't a target nearby to use that on."));
+						Send.SkillUseSilentCancel(attacker);
+						return;
+					}
+					else
+					{
+						continue;
+					}
+				}
+
+				target.StopMove();
+
+				Skill smash = target.Skills.Get(SkillId.Smash);
+				if (smash != null && target.Skills.IsReady(SkillId.Smash))
+					attacker.InterceptingSkillId = SkillId.Smash;
+				TargetAction tAction;
+				if (attacker.InterceptingSkillId == SkillId.Smash && !target.GetPosition().InRange(attacker.GetPosition(), target.AttackRangeFor(attacker)))
+				{
+					aAction.Options |= AttackerOptions.Result;
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);
+					tAction.Options |= TargetOptions.Result;
+
+				}
+				else
+				{
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+				}
+				attacker.InterceptingSkillId = SkillId.None;
+				tAction.Delay = 300; // Usually 300, sometimes 350?
+
+				// Calculate damage
+				var damage = attacker.GetRndTotalDamage();
+				damage *= skill.RankData.Var1 / 100f;
+
+				// Handle skills and reductions
+				CriticalHit.Handle(attacker, attacker.GetTotalCritChance(0), ref damage, tAction);
+				SkillHelper.HandleDefenseProtection(target, ref damage);
+				Defense.Handle(aAction, tAction, ref damage);
+				ManaShield.Handle(target, ref damage, tAction);
+
+				// Clean Hit if not defended nor critical
+				if (!tAction.Is(CombatActionType.Defended) && !tAction.Has(TargetOptions.Critical))
+					tAction.Set(TargetOptions.CleanHit);
+
+				// Take damage if any is left
+				if (damage > 0)
+					target.TakeDamage(tAction.Damage = damage, attacker);
+
+				// Finish if dead, knock down if not defended
+				if (target.IsDead)
+					tAction.Set(TargetOptions.KnockDownFinish);
+				else if (!tAction.Is(CombatActionType.Defended))
+					tAction.Set(TargetOptions.KnockDown);
+
+				// Anger Management
+				if (!target.IsDead)
+				{
+					survived.Add(target);
+				}
+
+				target.IsInBattleStance = true;
+
+				// Stun & knock back
+				aAction.Stun = CombatMastery.GetAttackerStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);
+
+				if (!tAction.Is(CombatActionType.Defended))
+				{
+					tAction.Stun = CombatMastery.GetTargetStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);
+					if (!target.IsDead)
+					{
+						if ((TargetOptions.KnockDown & tAction.Options) != 0)
+						{
+							//Timer for getting back up.
+							System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+							getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+							getUpTimer.Enabled = true;
+						}
+					}
 					target.Stability = Creature.MinStability;
 					attacker.Shove(target, KnockbackDistance);
 				}
@@ -171,6 +372,8 @@ namespace Aura.Channel.Skills.Combat
 				var aggroTarget = survived.Random();
 				aggroTarget.Aggro(attacker);
 			}
+
+			
 
 			// Spin it~
 			Send.UseMotion(attacker, 8, 4);
@@ -227,7 +430,8 @@ namespace Aura.Channel.Skills.Combat
 			if (attacker.RightHand != null && attacker.RightHand.Data.WeaponType == 9)
 				range *= knuckleMod;
 
-			range += attacker.RaceData.AttackRange;
+			var attackerRange = attacker.RaceData.AttackRange * attacker.BodyScale;
+			range -= attackerRange;
 
 			return (int)range;
 		}

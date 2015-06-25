@@ -715,6 +715,19 @@ namespace Aura.Channel.World
 			}
 		}
 
+		public List<Creature> GetVisibleCreaturesInRangeUsingHitbox(Creature creature, int range = VisibleRange)
+		{
+			_creaturesRWLS.EnterReadLock();
+			try
+			{
+				return _creatures.Values.Where(a => a != creature && a.GetPosition().InRange(creature.GetPosition(), range+ creature.AttackRangeFor(a)) && !a.Conditions.Has(ConditionsA.Invisible)).ToList();
+			}
+			finally
+			{
+				_creaturesRWLS.ExitReadLock();
+			}
+		}
+
 		/// <summary>
 		///  Spawns prop, sends EntityAppears.
 		/// </summary>

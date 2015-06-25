@@ -128,6 +128,9 @@ namespace Aura.Channel.Skills.Combat
 			if (target == null)
 				return CombatSkillResult.InvalidTarget;
 
+			if (target.IsNotReadyToBeHit)
+				return CombatSkillResult.Okay;
+
 			// Actions
 			var cap = new CombatActionPack(attacker, skill.Info.Id);
 
@@ -187,6 +190,17 @@ namespace Aura.Channel.Skills.Combat
 				{
 					aAction.Set(AttackerOptions.KnockBackHit1);
 					tAction.Set(TargetOptions.Finished);
+				}
+				else
+				{
+					if ((TargetOptions.KnockDown & tAction.Options) != 0)
+					{
+						//Timer for getting back up.
+						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+						getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+						getUpTimer.Enabled = true;
+					}
 				}
 			}
 			else

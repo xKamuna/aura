@@ -127,6 +127,15 @@ namespace Aura.Channel.Skills.Combat
 			aAction.Stun = StunTime;
 			tAction.Stun = StunTime;
 
+			if (!target.IsDead)
+			{
+					//Timer for getting back up.
+					System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+
+					getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+					getUpTimer.Enabled = true;
+			}
+
 			target.Stability = Creature.MinStability;
 			attacker.Shove(target, KnockbackDistance);
 

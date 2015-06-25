@@ -265,7 +265,8 @@ namespace Aura.Channel.World.Entities
 			// Chance = Will/10, capped at 50%
 			// (i.e 80 Will = 8%, 500+ Will = 50%)
 			// Actual formula unknown
-			var chance = Math.Min(50, this.Will / 10);
+			// Added life proximity to the formula.
+			var chance = Math.Min(50, this.Will / 10 + (LifeMax > 0 ? ((this.Life / this.LifeMax) * 10) : 0));
 			return (RandomProvider.Get().Next(101) < chance);
 		}
 

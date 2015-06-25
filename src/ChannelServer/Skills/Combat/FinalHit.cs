@@ -115,13 +115,13 @@ namespace Aura.Channel.Skills.Combat
 			var attackResult = false;
 
 			var target = creature.Region.GetCreature(targetEntityId);
-			if (target != null && !creature.IsStunned && creature.CanTarget(target))
+			if (target != null && !creature.IsStunned &&  !creature.IsOnAttackDelay && creature.CanTarget(target))
 			{
 				var pos = creature.GetPosition();
 				var targetPos = target.GetPosition();
 				var inRange = pos.InRange(targetPos, creature.AttackRangeFor(target));
 
-				if (!inRange)
+				if (!inRange && !target.IsNotReadyToBeHit)
 				{
 					var telePos = pos.GetRelative(targetPos, -creature.AttackRangeFor(target) + 100);
 

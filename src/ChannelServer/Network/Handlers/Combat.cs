@@ -81,13 +81,20 @@ namespace Aura.Channel.Network.Handlers
 				return;
 			}
 
+			
+
 			creature.Target = target;
 
 			Send.SetCombatTarget(creature, targetEntityId, mode);
 
 			// Purpose unknown, without this the client doesn't seem to
 			// accept the stun time, you can spam attacks.
+			// This updates the target so that it knows that you're attacking!  It lets you determine when someone is trying to attack. - Kamuna
 			Send.CombatTargetUpdate(creature, targetEntityId);
+			if (targetEntityId == 0)
+			{
+                creature.AttemptingAttack = false;
+			}
 		}
 
 		/// <summary>
@@ -109,22 +116,29 @@ namespace Aura.Channel.Network.Handlers
 
 			var creature = client.GetCreatureSafe(packet.Id);
 
+			// Get skill
+			var skill = creature.Skills.ActiveSkill;
+			var combatMastery = creature.Skills.Get(SkillId.CombatMastery);
+			if (skill == null && (skill = combatMastery) == null)
+			{
+				Log.Warning("CombatAttack: Creature '{0}' doesn't have Combat Mastery.", creature.Name);
+				goto L_End;
+			}
+			if (skill == combatMastery || skill == null)
+			{
+				Send.CombatTargetUpdate(creature, targetEntityId);
+			}
+
 			// Check target
 			var target = creature.Region.GetCreature(targetEntityId);
 			if (target == null || !creature.CanTarget(target))
 				goto L_End;
 
 			// Check Stun
-			if (creature.IsStunned)
+			if (creature.IsStunned || creature.IsOnAttackDelay)
 				goto L_End;
 
-			// Get skill
-			var skill = creature.Skills.ActiveSkill;
-			if (skill == null && (skill = creature.Skills.Get(SkillId.CombatMastery)) == null)
-			{
-				Log.Warning("CombatAttack: Creature '{0}' doesn't have Combat Mastery.", creature.Name);
-				goto L_End;
-			}
+			
 
 			// Get handler
 			var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ISkillHandler>(skill.Info.Id);
@@ -146,14 +160,13 @@ namespace Aura.Channel.Network.Handlers
 			try
 			{
 				var result = handler.Use(creature, skill, targetEntityId);
-
 				if (result == CombatSkillResult.Okay)
 				{
 					Send.CombatAttackR(creature, true);
 					skill.State = SkillState.Used;
 
 					creature.Regens.Remove("ActiveSkillWait");
-				}
+                }
 				else if (result == CombatSkillResult.OutOfRange)
 				{
 					Send.CombatAttackR(creature, target);
@@ -162,7 +175,6 @@ namespace Aura.Channel.Network.Handlers
 				{
 					Send.CombatAttackR(creature, false);
 				}
-
 				return;
 			}
 			catch (NotImplementedException)

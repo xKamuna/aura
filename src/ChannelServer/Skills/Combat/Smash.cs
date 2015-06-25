@@ -98,14 +98,80 @@ namespace Aura.Channel.Skills.Combat
 			if (target == null)
 				return CombatSkillResult.InvalidTarget;
 
+			if (target.IsNotReadyToBeHit)
+				return CombatSkillResult.Okay;
+
 			// Check range
 			var targetPosition = target.GetPosition();
-			if (!attacker.GetPosition().InRange(targetPosition, attacker.AttackRangeFor(target)))
+			if (!attacker.GetPosition().InRange(targetPosition, attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)
 				return CombatSkillResult.OutOfRange;
+			attacker.IgnoreAttackRange = false;
+			// Against Normal Attack
+			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
+			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+			{
+				target.InterceptingSkillId = SkillId.Smash;
+				target.IgnoreAttackRange = true;
+				var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+				if (skillHandler == null)
+				{
+					Log.Error("Smash.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+					return CombatSkillResult.Okay;
+				}
+				skillHandler.Use(target, combatMastery, attacker.EntityId);
+				return CombatSkillResult.Okay;
+			}
+
+			// Against Windmill
+			//TODO: Change this into the new NPC client system when it comes out.
+			Skill windmill = target.Skills.Get(SkillId.Windmill);
+			PlayerCreature player = attacker as PlayerCreature;
+			if (windmill != null && target.Skills.IsReady(SkillId.Windmill) && player == null)
+			{
+				target.InterceptingSkillId = SkillId.Smash;
+				var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<IUseable>(windmill.Info.Id) as Windmill;
+				if (skillHandler == null)
+				{
+					Log.Error("Smash.Use: Target's skill handler not found for '{0}'.", windmill.Info.Id);
+					return CombatSkillResult.Okay;
+				}
+				skillHandler.Use(target, windmill);
+				return CombatSkillResult.Okay;
+			}
+
+			// Against Smash
+			Skill smash = target.Skills.Get(SkillId.Smash);
+			
+            if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned)
+			{
+				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.Inventory.RightHand, false);
+				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
+				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
+				{
+					target.InterceptingSkillId = SkillId.Smash;
+					target.IgnoreAttackRange = true;
+					var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(smash.Info.Id);
+					if (skillHandler == null)
+					{
+						Log.Error("Smash.Use: Target's skill handler not found for '{0}'.", smash.Info.Id);
+						return CombatSkillResult.Okay;
+					}
+					skillHandler.Use(target, smash, attacker.EntityId);
+					return CombatSkillResult.Okay;
+				}
+				else
+				{
+					attacker.InterceptingSkillId = SkillId.Smash;
+				}
+			}
 
 			// Stop movement
 			attacker.StopMove();
 			target.StopMove();
+
+			
+
+			target.IgnoreAttackRange = false;
 
 			// Counter
 			if (Counterattack.Handle(target, attacker))
@@ -115,10 +181,24 @@ namespace Aura.Channel.Skills.Combat
 			var aAction = new AttackerAction(CombatActionType.HardHit, attacker, skill.Info.Id, targetEntityId);
 			aAction.Set(AttackerOptions.Result | AttackerOptions.KnockBackHit2);
 
-			var tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+			
+
+			TargetAction tAction;
+			if (attacker.InterceptingSkillId == SkillId.Smash)
+			{
+				aAction.Options |= AttackerOptions.Result;
+				tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);
+
+			}
+			else
+			{
+				tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+			}
 			tAction.Set(TargetOptions.Result | TargetOptions.Smash);
 
-			var cap = new CombatActionPack(attacker, skill.Info.Id, aAction, tAction);
+			attacker.InterceptingSkillId = SkillId.None;
+
+			var cap = new CombatActionPack(attacker, skill.Info.Id, tAction, aAction);
 
 			// Calculate damage
 			var damage = this.GetDamage(attacker, skill);
@@ -146,6 +226,15 @@ namespace Aura.Channel.Skills.Combat
 			attacker.Stun = aAction.Stun = StunTime;
 			target.Stun = tAction.Stun = StunTime;
 			target.Stability = Creature.MinStability;
+
+			if (!target.IsDead)
+			{
+				//Timer for getting back up.
+				System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun + AfterUseStun - 1000);
+
+				getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+				getUpTimer.Enabled = true;
+			}
 
 			// Set knockbacked position
 			attacker.Shove(target, KnockbackDistance);

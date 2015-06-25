@@ -22,6 +22,8 @@ namespace Aura.Channel.Network.Sending
 		/// <param name="creature"></param>
 		public static void ChangeStance(Creature creature)
 		{
+			if(!creature.IsInBattleStance)
+				creature.AttemptingAttack = false;
 			var packet = new Packet(Op.ChangeStance, creature.EntityId);
 			packet.PutByte(creature.IsInBattleStance);
 			packet.PutByte(1);
@@ -168,6 +170,7 @@ namespace Aura.Channel.Network.Sending
 		/// <param name="targetEntityId"></param>
 		public static void CombatTargetUpdate(Creature creature, long targetEntityId)
 		{
+			creature.AttemptingAttack = true;
 			var packet = new Packet(Op.CombatTargetUpdate, creature.EntityId);
 			packet.PutLong(targetEntityId);
 
