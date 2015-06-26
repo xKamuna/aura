@@ -201,6 +201,7 @@ namespace Aura.Channel.Network.Handlers
 				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
 				{
 					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
+					skill.EndCooldownTime = DateTime.Now;
 				}
 				else
 				{
@@ -359,6 +360,7 @@ namespace Aura.Channel.Network.Handlers
 				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
 				{
 					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
+					skill.EndCooldownTime = DateTime.Now;
 				}
 				else
 				{
