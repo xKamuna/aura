@@ -81,6 +81,57 @@ namespace Aura.Channel.Skills.Combat
 				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(240000);
 			}
 
+			double duration = 1;
+			if (skill.Info.Rank < SkillRank.RD)
+			{
+				duration = 20000;
+			}
+			else if (skill.Info.Rank < SkillRank.RA)
+			{
+				duration = 24000;
+			}
+			else if (skill.Info.Rank < SkillRank.R7)
+			{
+				duration = 28000;
+			}
+			else if (skill.Info.Rank < SkillRank.R4)
+			{
+				duration = 32000;
+			}
+			else if (skill.Info.Rank < SkillRank.R1)
+			{
+				duration = 36000;
+			}
+			else
+			{
+				duration = 40000;
+			}
+
+			
+
+			if (creature != null && (creature.Client == null || !(creature.Client.Account != null && creature.Client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))))
+			{
+				System.Timers.Timer durationTimer = new System.Timers.Timer(duration);
+
+				durationTimer.Elapsed +=
+				(sender, e) =>
+				{
+					durationTimer.Enabled = false;
+					if (creature.Skills.IsActive(SkillId.FinalHit))
+					{
+						if (creature != null && (creature.Client == null || !(creature.Client.Account != null && creature.Client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))))
+						{
+							creature.Regens.Remove("ActiveSkillWait");
+
+							creature.Skills.CancelActiveSkill();
+						}
+					}
+					durationTimer = null;
+				};
+				durationTimer.Enabled = true;
+			}
+			
+
 			Send.Effect(creature, Effect.FinalHit, (byte)1, (byte)1);
 			Send.SkillReady(creature, skill.Info.Id);
 
@@ -122,8 +173,6 @@ namespace Aura.Channel.Skills.Combat
 
 			if (_cm == null)
 				_cm = ChannelServer.Instance.SkillManager.GetHandler<CombatMastery>(SkillId.CombatMastery);
-
-			// TODO: Check duration
 
 			var attackResult = false;
 

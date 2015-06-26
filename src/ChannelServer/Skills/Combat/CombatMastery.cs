@@ -222,30 +222,33 @@ namespace Aura.Channel.Skills.Combat
 				// Aggro
 				target.Aggro(attacker);
 
-				// Evaluate caused damage
-				if (!target.IsDead)
+					// Evaluate caused damage
+					if (!target.IsDead)
 				{
 					if (tAction.Type != CombatActionType.Defended)
 					{
-						target.Stability -= this.GetStabilityReduction(attacker, weapon) / maxHits;
+						if (!target.Skills.IsActive(SkillId.FinalHit))
+						{
+							target.Stability -= this.GetStabilityReduction(attacker, weapon) / maxHits;
 
-						// React normal for CombatMastery, knock down if 
-						// FH and not dual wield, don't knock at all if dual.
-						if (skill.Info.Id != SkillId.FinalHit)
-						{
-							// Originally we thought you knock enemies back, unless it's a critical
-							// hit, but apparently you knock *down* under normal circumstances.
-							// More research to be done.
-							if (target.IsUnstable && target.Is(RaceStands.KnockBackable))
-								//tAction.Set(tAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+							// React normal for CombatMastery, knock down if 
+							// FH and not dual wield, don't knock at all if dual.
+							if (skill.Info.Id != SkillId.FinalHit)
+							{
+								// Originally we thought you knock enemies back, unless it's a critical
+								// hit, but apparently you knock *down* under normal circumstances.
+								// More research to be done.
+								if (target.IsUnstable && target.Is(RaceStands.KnockBackable))
+									//tAction.Set(tAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+									tAction.Set(TargetOptions.KnockDown);
+								if (target.Life < 0)
+									tAction.Set(TargetOptions.KnockDown);
+							}
+							else if (!dualWield && !weaponIsKnuckle)
+							{
+								target.Stability = Creature.MinStability;
 								tAction.Set(TargetOptions.KnockDown);
-							if(target.Life < 0)
-								tAction.Set(TargetOptions.KnockDown);
-						}
-						else if (!dualWield && !weaponIsKnuckle)
-						{
-							target.Stability = Creature.MinStability;
-							tAction.Set(TargetOptions.KnockDown);
+							}
 						}
 					}
 				}
@@ -257,7 +260,10 @@ namespace Aura.Channel.Skills.Combat
 				// React to knock back
 				if (tAction.IsKnockBack && tAction.Type != CombatActionType.Defended)
 				{
-					attacker.Shove(target, KnockBackDistance);
+					if (!target.Skills.IsActive(SkillId.FinalHit))
+					{
+						attacker.Shove(target, KnockBackDistance);
+					}
 
 					aAction.Set(AttackerOptions.KnockBackHit2);
 
@@ -281,7 +287,10 @@ namespace Aura.Channel.Skills.Combat
 				if (tAction.Type != CombatActionType.Defended)
 				{
 					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
-					tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
+					if (!target.Skills.IsActive(SkillId.FinalHit))
+					{
+						tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
+					}
 					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
 					{
 						attacker.AttackDelayTime = DateTime.Now.AddMilliseconds(GetAttackerStun(attacker, weapon, true));
@@ -357,25 +366,29 @@ namespace Aura.Channel.Skills.Combat
 							{
 								if (tSplashAction.Type != CombatActionType.Defended)
 								{
-									splashTarget.Stability -= (this.GetStabilityReduction(attacker, weapon) / maxHits) / 2;  //Less stability reduction for splash damage.
+									if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+									{
 
-									// React normal for CombatMastery, knock down if 
-									// FH and not dual wield, don't knock at all if dual.
-									if (skill.Info.Id != SkillId.FinalHit)
-									{
-										// Originally we thought you knock enemies back, unless it's a critical
-										// hit, but apparently you knock *down* under normal circumstances.
-										// More research to be done.
-										if (splashTarget.IsUnstable && splashTarget.Is(RaceStands.KnockBackable))
-											//tSplashAction.Set(tSplashAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+										splashTarget.Stability -= (this.GetStabilityReduction(attacker, weapon) / maxHits) / 2;  //Less stability reduction for splash damage.
+
+										// React normal for CombatMastery, knock down if 
+										// FH and not dual wield, don't knock at all if dual.
+										if (skill.Info.Id != SkillId.FinalHit)
+										{
+											// Originally we thought you knock enemies back, unless it's a critical
+											// hit, but apparently you knock *down* under normal circumstances.
+											// More research to be done.
+											if (splashTarget.IsUnstable && splashTarget.Is(RaceStands.KnockBackable))
+												//tSplashAction.Set(tSplashAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+												tSplashAction.Set(TargetOptions.KnockDown);
+											if (splashTarget.Life < 0)
+												tSplashAction.Set(TargetOptions.KnockDown);
+										}
+										else if (!dualWield && !weaponIsKnuckle)
+										{
+											splashTarget.Stability = Creature.MinStability;
 											tSplashAction.Set(TargetOptions.KnockDown);
-										if (splashTarget.Life < 0)
-											tSplashAction.Set(TargetOptions.KnockDown);
-									}
-									else if (!dualWield && !weaponIsKnuckle)
-									{
-										splashTarget.Stability = Creature.MinStability;
-										tSplashAction.Set(TargetOptions.KnockDown);
+										}
 									}
 								}
 							}
@@ -387,15 +400,21 @@ namespace Aura.Channel.Skills.Combat
 							// React to knock back
 							if (tSplashAction.IsKnockBack && tSplashAction.Type != CombatActionType.Defended)
 							{
-								attacker.Shove(splashTarget, KnockBackDistance);
+
+								if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+								{
+									attacker.Shove(splashTarget, KnockBackDistance);
+								}
 							}
 
 
 							// Set stun time
 							if (tSplashAction.Type != CombatActionType.Defended)
 							{
-								tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
-
+								if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+								{
+									tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
+								}
 								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
 								{
 									//Timer for getting back up.
@@ -405,7 +424,8 @@ namespace Aura.Channel.Skills.Combat
 									getUpTimer.Enabled = true;
 								}
 							}
-
+							
+							
 							cap.Add(tSplashAction);
 						}
 

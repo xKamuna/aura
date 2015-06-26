@@ -147,23 +147,26 @@ namespace Aura.Channel.Skills
 					}
 
 					// Cancel target's skill
-					if (action.Creature.Skills.ActiveSkill != null)
+					if (!action.Creature.Skills.IsReady(SkillId.FinalHit) || action.IsKnockBack)
 					{
-						// Cancel non stackable skills on hit, wait for a
-						// knock back for stackables
-						if (action.Creature.Skills.ActiveSkill.RankData.StackMax > 1)
+						if (action.Creature.Skills.ActiveSkill != null)
 						{
-							if (action.IsKnockBack)
+							// Cancel non stackable skills on hit, wait for a
+							// knock back for stackables
+							if (action.Creature.Skills.ActiveSkill.RankData.StackMax > 1)
 							{
-								var custom = ChannelServer.Instance.SkillManager.GetHandler(action.Creature.Skills.ActiveSkill.Info.Id) as ICustomHitCanceler;
-								if (custom == null)
-									action.Creature.Skills.CancelActiveSkill();
-								else
-									custom.CustomHitCancel(action.Creature);
+								if (action.IsKnockBack)
+								{
+									var custom = ChannelServer.Instance.SkillManager.GetHandler(action.Creature.Skills.ActiveSkill.Info.Id) as ICustomHitCanceler;
+									if (custom == null)
+										action.Creature.Skills.CancelActiveSkill();
+									else
+										custom.CustomHitCancel(action.Creature);
+								}
 							}
+							else
+								action.Creature.Skills.CancelActiveSkill();
 						}
-						else
-							action.Creature.Skills.CancelActiveSkill();
 					}
 
 					// Cancel rest
