@@ -413,6 +413,11 @@ namespace Aura.Channel.World.Inventory
 			if (!this.Has(target))
 				return false;
 
+			if (target.IsEquip())
+			{
+				if (item.Durability == 0 && item.OptionInfo.DurabilityOriginal != 0)
+					return false;
+			}
 			var source = item.Info.Pocket;
 			var amount = item.Info.Amount;
 
@@ -1246,7 +1251,7 @@ namespace Aura.Channel.World.Inventory
 			item.OptionInfo.Durability = Math.Max(0, item.OptionInfo.Durability - amount);
 			if(item.Durability == 0)
 			{
-				Send.Notice(_creature, Localization.Get("Your equipment's durability has reached 0.")); //TODO: Replace this with the name of the actual weapon.
+				Send.Notice(_creature, Localization.Get("The durability of ") + Localization.Get(item.Data.Name) + Localization.Get(" has reached 0."));
 			}
 			Send.ItemDurabilityUpdate(_creature, item);
 		}

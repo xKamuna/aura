@@ -71,12 +71,13 @@ namespace Aura.Channel.Skills
 					if (weapon.IsBlessed)
 						reduce = Math.Max(1, reduce / 2);
 
+					if (weapon.Durability > 0 && weapon.Durability-reduce <= 0)
+					{
+						Send.Notice(attacker, Localization.Get("The durability of ") + Localization.Get(weapon.Data.Name) + Localization.Get(" has reached 0."));
+                    }
 					weapon.Durability -= reduce;
 					Send.ItemDurabilityUpdate(attacker, weapon);
-					if (weapon.Durability == 0)
-					{
-						Send.Notice(attacker, Localization.Get("Your equipment's durability has reached 0.")); //TODO: Replace this with the name of the actual weapon.
-					}
+					
 				}
 
 				// Proficiency
