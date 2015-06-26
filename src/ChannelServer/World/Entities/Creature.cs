@@ -1287,6 +1287,10 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		public virtual float GetRndRightHandDamage()
 		{
+			if (this.RightHand != null && this.RightHand.Durability == 0)
+			{
+				return GetRndBareHandDamage();
+			}
 			// Checks in the properties should make this work (right = rh weapon or bare hand)
 			var min = this.AttackMinBase + this.AttackMinBaseMod + this.RightAttackMinMod;
 			var max = this.AttackMaxBase + this.AttackMaxBaseMod + this.RightAttackMaxMod;
@@ -1313,6 +1317,11 @@ namespace Aura.Channel.World.Entities
 		{
 			if (this.LeftHand == null /*|| !weapon*/)
 				return 0;
+
+			if (this.LeftHand.Durability == 0)
+			{
+				return GetRndBareHandDamage();
+			}
 
 			return this.GetRndDamage(this.LeftAttackMinMod, this.LeftAttackMaxMod, this.LeftBalanceMod);
 		}
@@ -1348,6 +1357,17 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		public float GetRndTotalDamage()
 		{
+			if(this.RightHand != null && this.RightHand.Durability == 0)
+			{
+				if (this.LeftHand != null && this.LeftHand.Durability != 0)
+				{
+					return ((GetRndBareHandDamage() + GetRndLeftHandDamage()) / 2);
+                }
+				else
+				{
+					return GetRndBareHandDamage();
+                }
+            }
 			var balance = 0;
 			if (this.RightHand == null)
 				balance = this.BalanceBase + this.BalanceBaseMod;

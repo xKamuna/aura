@@ -94,7 +94,15 @@ namespace Aura.Channel.Skills.Combat
 			// Reduce damage
 			var defenseSkill = tAction.Creature.Skills.Get(SkillId.Defense);
 			if (defenseSkill != null)
+			{
+				if (defenseSkill.IsOnCooldown)
+					return false;
 				damage = Math.Max(1, damage - defenseSkill.RankData.Var3);
+			}
+			else
+			{
+				return false;
+			}
 
 			defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 

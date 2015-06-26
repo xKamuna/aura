@@ -76,6 +76,17 @@ namespace Aura.Channel.Skills.Combat
 			if (!target.Skills.IsReady(SkillId.Counterattack))
 				return false;
 
+			var counterSkill = target.Skills.Get(SkillId.Counterattack);
+			if (counterSkill != null)
+			{
+				if (counterSkill.IsOnCooldown)
+					return false;
+			}
+			else
+			{
+				return false;
+			}
+
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<Counterattack>(SkillId.Counterattack);
 			handler.Use(target, attacker);
 
