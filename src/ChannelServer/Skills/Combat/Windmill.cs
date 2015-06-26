@@ -183,13 +183,13 @@ namespace Aura.Channel.Skills.Combat
 
 				// Calculate damage
 				var damage = attacker.GetRndTotalDamage();
-				if (attacker.Inventory.RightHand != null && (
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/bow01/") ||
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/bow/") ||
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/crossbow/") ||
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/shuriken/") ||
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/atlatl/") ||
-				attacker.Inventory.RightHand.Data.HasTag("/weapon/gun/")))
+				if (attacker.RightHand != null && (
+				attacker.RightHand.Data.HasTag("/weapon/bow01/") ||
+				attacker.RightHand.Data.HasTag("/weapon/bow/") ||
+				attacker.RightHand.Data.HasTag("/weapon/crossbow/") ||
+				attacker.RightHand.Data.HasTag("/weapon/shuriken/") ||
+				attacker.RightHand.Data.HasTag("/weapon/atlatl/") ||
+				attacker.RightHand.Data.HasTag("/weapon/gun/")))
 				{
 					damage = attacker.GetRndBareHandDamage();
 				}

@@ -70,7 +70,7 @@ namespace Aura.Channel.Skills.Combat
 			if (smash != null && target.Skills.IsReady(SkillId.Smash))
 				attacker.InterceptingSkillId = SkillId.Smash;
 
-			var rightWeapon = attacker.Inventory.RightHand;
+			var rightWeapon = attacker.RightHand;
 			var leftWeapon = attacker.Inventory.LeftHand;
 			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0);
 
@@ -89,7 +89,7 @@ namespace Aura.Channel.Skills.Combat
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
 			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
 			{
-				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.Inventory.RightHand, false);
+				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
 				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
 				{

@@ -121,7 +121,7 @@ namespace Aura.Channel.Skills.Combat
 			cap.Add(aAction, tAction);
 
 			float damage;
-			if(attacker.Inventory.RightHand.Data.HasTag("/weapon/gun/"))   //TODO: Only do this when out of ammo.
+			if(attacker.RightHand != null && attacker.RightHand.Data.HasTag("/weapon/gun/"))   //TODO: Only do this when out of ammo.
             {
 				damage = (attacker.GetRndBareHandDamage() * (skill.RankData.Var2 / 100f)) +
 				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));

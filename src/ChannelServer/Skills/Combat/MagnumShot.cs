@@ -201,7 +201,7 @@ namespace Aura.Channel.Skills.Combat
 						getUpTimer.Enabled = true;
 					}
 				}
-				var weapon = attacker.Inventory.RightHand;
+				var weapon = attacker.RightHand;
 				var critSkill = attacker.Skills.Get(SkillId.CriticalHit);
 				if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0)
 				{

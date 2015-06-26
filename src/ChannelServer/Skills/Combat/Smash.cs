@@ -144,7 +144,7 @@ namespace Aura.Channel.Skills.Combat
 			
             if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned)
 			{
-				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.Inventory.RightHand, false);
+				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
 				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
 				{
@@ -177,7 +177,7 @@ namespace Aura.Channel.Skills.Combat
 			if (Counterattack.Handle(target, attacker))
 				return CombatSkillResult.Okay;
 
-			var weapon = attacker.Inventory.RightHand;
+			var weapon = attacker.RightHand;
 			ICollection<Creature> targets = null;
 			if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0 || weapon == null)
 			{

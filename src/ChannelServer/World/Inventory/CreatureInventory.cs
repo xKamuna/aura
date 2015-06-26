@@ -417,6 +417,34 @@ namespace Aura.Channel.World.Inventory
 			{
 				if (item.Durability == 0 && item.OptionInfo.DurabilityOriginal != 0)
 					return false;
+
+				if  (_creature.IsElf && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+						(
+							item.Data.Type == ItemType.Weapon ||
+							item.Data.Type == ItemType.Weapon2 ||
+							item.Data.Type == ItemType.Weapon2H
+						)
+					){ return false; }
+
+				if (_creature.IsGiant && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+						(
+							(item.Data.Type == ItemType.Weapon ||
+							item.Data.Type == ItemType.Weapon2 ||
+							item.Data.Type == ItemType.Weapon2H) && !item.Data.HasTag("/weapon/blunt/")
+						)
+					){ return false; }
+
+				if (!_creature.IsGiant && item.Data.HasTag("/giant_only/"))
+					return false;
+				if (!_creature.IsHuman && item.Data.HasTag("/human_only/"))
+					return false;
+				if (!_creature.IsElf && item.Data.HasTag("/elf_only/"))
+					return false;
+
+				if (!_creature.IsHuman && !_creature.IsGiant && item.Data.HasTag("/human_giant_only/"))
+					return false;
+				if (!_creature.IsHuman && !_creature.IsElf && item.Data.HasTag("/human_elf_only/"))
+					return false;
 			}
 			var source = item.Info.Pocket;
 			var amount = item.Info.Amount;
