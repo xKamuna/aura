@@ -1882,7 +1882,7 @@ namespace Aura.Channel.World.Entities
 		{
 			getUpTimer.Enabled = false;
 			// Recover from knock back/down after stun ended
-			if (this.WasKnockedBack)
+			if (this.Region != Region.Limbo && this.WasKnockedBack)
 			{
 				if (!IsMoving)
 				{

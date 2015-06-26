@@ -236,7 +236,7 @@ namespace Aura.Channel.Skills.Combat
 							//Timer for getting back up.
 							System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
 
-							getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+							getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 							getUpTimer.Enabled = true;
 						}
 					}
@@ -263,6 +263,25 @@ namespace Aura.Channel.Skills.Combat
 			Send.UseMotion(attacker, 8, 4);
 
 			cap.Handle();
+
+			if (skill.Info.Rank >= SkillRank.R9)
+			{
+				if(attacker.IsHuman)
+                    skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
+				else if (attacker.IsElf)
+					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
+				else if (attacker.IsGiant)
+					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
+			}
+			else
+			{
+				if(attacker.IsHuman)
+					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
+				else if (attacker.IsElf)
+					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4500);
+				else if (attacker.IsGiant)
+					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
+			}
 
 			Send.SkillUse(attacker, skill.Info.Id, targetAreaId, unkInt1, unkInt2);
 

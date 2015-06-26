@@ -168,7 +168,7 @@ namespace Aura.Channel.Skills.Combat
 						//Timer for getting back up.
 						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
 
-						getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+						getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 						getUpTimer.Enabled = true;
 					}
 

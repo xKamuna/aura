@@ -82,6 +82,19 @@ namespace Aura.Channel.Network.Handlers
 
 			var skill = creature.Skills.GetSafe(skillId);
 
+			if (skill.IsOnCooldown)
+			{
+				if(client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
+				{
+					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
+				}
+				else
+				{
+					return; //Cancel if on cooldown.  Client sends its own message stating that the cooldown is not yet over.  Ignore if GM or devCAT title is on and account has proper authority.
+				}
+			}
+				
+
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<IStartable>(skillId);
 			if (handler == null)
 			{
@@ -182,6 +195,18 @@ namespace Aura.Channel.Network.Handlers
 
 			var skill = creature.Skills.GetSafe(skillId);
 			skill.State = SkillState.None;
+
+			if (skill.IsOnCooldown)
+			{
+				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
+				{
+					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
+				}
+				else
+				{
+					return; //Cancel if on cooldown.  Client sends its own message stating that the cooldown is not yet over.  Ignore if GM or devCAT title is on and account has proper authority.
+				}
+			}
 
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<IPreparable>(skillId);
 			if (handler == null)
@@ -328,6 +353,18 @@ namespace Aura.Channel.Network.Handlers
 			var creature = client.GetCreatureSafe(packet.Id);
 
 			var skill = creature.Skills.GetSafe(skillId);
+
+			if (skill.IsOnCooldown)
+			{
+				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
+				{
+					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
+				}
+				else
+				{
+					return; //Cancel if on cooldown.  Client sends its own message stating that the cooldown is not yet over.  Ignore if GM or devCAT title is on and account has proper authority.
+				}
+			}
 
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<IUseable>(skillId);
 			if (handler == null)

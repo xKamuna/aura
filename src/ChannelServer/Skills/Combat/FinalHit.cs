@@ -68,6 +68,19 @@ namespace Aura.Channel.Skills.Combat
 			creature.Temp.FinalHitKillCountAwful = 0;
 			creature.Temp.FinalHitKillCountBoss = 0;
 
+			if (skill.Info.Rank < SkillRank.R5)
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(300000);
+			}
+			else if (skill.Info.Rank < SkillRank.R1)
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(270000);
+			}
+			else
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(240000);
+			}
+
 			Send.Effect(creature, Effect.FinalHit, (byte)1, (byte)1);
 			Send.SkillReady(creature, skill.Info.Id);
 

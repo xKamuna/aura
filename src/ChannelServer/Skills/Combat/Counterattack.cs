@@ -8,6 +8,7 @@ using Aura.Channel.World.Entities;
 using Aura.Mabi.Const;
 using Aura.Mabi.Network;
 using Aura.Shared.Network;
+using System;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -142,7 +143,7 @@ namespace Aura.Channel.Skills.Combat
 					//Timer for getting back up.
 					System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
 
-					getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
+					getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 					getUpTimer.Enabled = true;
 			}
 
@@ -151,6 +152,8 @@ namespace Aura.Channel.Skills.Combat
 
 			// Update both weapons
 			SkillHelper.UpdateWeapon(attacker, target, attacker.RightHand, attacker.LeftHand);
+
+			skill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 
 			Send.SkillUseStun(attacker, skill.Info.Id, StunTime, 1);
 

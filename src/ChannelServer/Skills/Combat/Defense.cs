@@ -96,6 +96,8 @@ namespace Aura.Channel.Skills.Combat
 			if (defenseSkill != null)
 				damage = Math.Max(1, damage - defenseSkill.RankData.Var3);
 
+			defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+
 			Send.SkillUseStun(tAction.Creature, SkillId.Defense, DefenseTargetStun, 0);
 
 			return true;

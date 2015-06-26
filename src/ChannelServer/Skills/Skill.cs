@@ -47,6 +47,9 @@ namespace Aura.Channel.Skills
 		/// </summary>
 		public DateTime CastEnd { get; set; }
 
+		public DateTime EndCooldownTime { get; set; }
+		public bool IsOnCooldown { get { return (DateTime.Now < this.EndCooldownTime); } }
+
 		private int _stack = 0;
 		/// <summary>
 		/// Gets or sets loaded stack count, capped at 0~max.
