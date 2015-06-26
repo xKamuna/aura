@@ -1905,19 +1905,57 @@ namespace Aura.Channel.World.Entities
 
 			return this.RaceData.HasTag(tag);
 		}
+
 		/// <summary>
-		/// Returns a list of creatures in range that are targetable.
-		/// Checks for collisions.
+		/// Returns targetable creatures in given range around creature.
 		/// </summary>
-		/// <param name="range"></param>
+		/// <param name="range">Radius around position.</param>
+		/// <param name="addAttackRange">Factor in attack range?</param>
 		/// <returns></returns>
-		public ICollection<Creature> GetTargetableCreaturesInRange(int range)
+		public ICollection<Creature> GetTargetableCreaturesInRange(int range, bool addAttackRange)
 		{
-			var visible = this.Region.GetVisibleCreaturesInRange(this, range);
-			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
+			return this.GetTargetableCreaturesAround(this.GetPosition(), range, addAttackRange);
+		}
+
+		/// <summary>
+		/// Returns targetable creatures in given range around position.
+		/// Optionally factors in attack range.
+		/// </summary>
+		/// <param name="position">Reference position.</param>
+		/// <param name="range">Radius around position.</param>
+		/// <param name="addAttackRange">Factor in attack range?</param>
+		/// <returns></returns>
+		public ICollection<Creature> GetTargetableCreaturesAround(Position position, int range, bool addAttackRange)
+		{
+			var targetable = this.Region.GetCreatures(target =>
+			{
+				var targetPos = target.GetPosition();
+				var radius = range;
+				if (addAttackRange)
+				{
+					// This is unofficial, the target's "hitbox" should be
+					// factored in, but the total attack range is too much.
+					// Using 50% for now until we know more.
+
+					//Figured out a decent formula... Try it.
+					radius += (int)(Math.Max(this.RaceData.AttackRange * this.BodyScale / 2, target.RaceData.AttackRange * target.BodyScale / 2) / 2);
+				}
+
+				return target != this // Exclude creature
+					&& this.CanTarget(target) // Check targetability
+					&& targetPos.InRange(position, radius) // Check range
+					&& !this.Region.Collisions.Any(position, targetPos) // Check collisions between position
+					&& !target.Conditions.Has(ConditionsA.Invisible); // Check visiblility (GM)
+			});
+
 			return targetable;
 		}
 
+		/// <summary>
+		/// OBSOLETE.
+		/// </summary>
+		/// <param name="range"></param>
+		/// <returns></returns>
 		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
 		{	
 			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
@@ -1927,8 +1965,21 @@ namespace Aura.Channel.World.Entities
 
 		public ICollection<Creature> GetTargetableCreaturesInCone(int radius, int angle)
 		{
-			var visible = this.Region.GetVisibleCreaturesInCone(this, radius, angle);
-			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
+			Position position = this.GetPosition();
+            var targetable = this.Region.GetCreatures(target =>
+			{
+				var targetPos = target.GetPosition();
+
+				return target != this // Exclude creature
+					&& this.CanTarget(target) // Check targetability
+					&& targetPos.InRange(position, radius) // Check range
+					&& Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(position.X, position.Y), 
+						Mabi.MabiMath.ByteToDirection(this.Direction), new Mabi.MabiMath.Vector2(targetPos.X, targetPos.Y), 
+						Mabi.MabiMath.DegreeToRadian(angle), radius) //Check that the target is in a FOV cone.
+					&& !this.Region.Collisions.Any(position, targetPos) // Check collisions between position
+					&& !target.Conditions.Has(ConditionsA.Invisible); // Check visiblility (GM)
+			});
+
 			return targetable;
 		}
 

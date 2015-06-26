@@ -121,7 +121,8 @@ namespace Aura.Channel.Skills.Combat
 			}
 			
 			var range = this.GetRange(attacker, skill);
-			var targets = attacker.GetTargetableCreaturesInRangeUsingHitbox(range);
+
+			var targets = attacker.GetTargetableCreaturesInRange(range, true);
 
 			// Check targets
 			if (targets.Count == 0)
