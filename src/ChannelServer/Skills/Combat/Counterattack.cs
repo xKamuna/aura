@@ -108,9 +108,19 @@ namespace Aura.Channel.Skills.Combat
 			var cap = new CombatActionPack(attacker, skill.Info.Id);
 			cap.Add(aAction, tAction);
 
-			var damage =
-				(attacker.GetRndTotalDamage() * (skill.RankData.Var2 / 100f)) +
+			float damage;
+			if(attacker.Inventory.RightHand.Data.HasTag("/weapon/gun/"))   //TODO: Only do this when out of ammo.
+            {
+				damage = (attacker.GetRndBareHandDamage() * (skill.RankData.Var2 / 100f)) +
 				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));
+			}
+			else
+            {
+				damage = (attacker.GetRndTotalDamage() * (skill.RankData.Var2 / 100f)) +
+				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));
+			}
+
+			
 
 			var critChance = attacker.GetTotalCritChance(target.Protection) + skill.RankData.Var3;
 

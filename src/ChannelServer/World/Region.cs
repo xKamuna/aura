@@ -720,7 +720,7 @@ namespace Aura.Channel.World
 			_creaturesRWLS.EnterReadLock();
 			try
 			{
-				return _creatures.Values.Where(a => a != creature && a.GetPosition().InRange(creature.GetPosition(), range+ creature.AttackRangeFor(a)) && !a.Conditions.Has(ConditionsA.Invisible)).ToList();
+				return _creatures.Values.Where(a => a != creature && a.GetPosition().InRange(creature.GetPosition(), Math.Max(25, range+(int)(Math.Max(creature.RaceData.AttackRange * creature.BodyScale / 2, a.RaceData.AttackRange * a.BodyScale / 2) / 2))) && !a.Conditions.Has(ConditionsA.Invisible)).ToList();
 			}
 			finally
 			{

@@ -14,6 +14,7 @@ using Aura.Channel.World;
 using Aura.Channel.Skills.Life;
 using Aura.Mabi;
 using Aura.Channel.Skills.Magic;
+using Aura.Channel.Network.Sending;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -69,6 +70,21 @@ namespace Aura.Channel.Skills.Combat
 			if (smash != null && target.Skills.IsReady(SkillId.Smash))
 				attacker.InterceptingSkillId = SkillId.Smash;
 
+			var rightWeapon = attacker.Inventory.RightHand;
+			var leftWeapon = attacker.Inventory.LeftHand;
+			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0);
+
+			
+			var staminaUsage = (rightWeapon != null && rightWeapon.Data.StaminaUsage != 0 ? rightWeapon.Data.StaminaUsage : 0.7f) + (dualWield ? leftWeapon.Data.StaminaUsage : 0f);
+			var lowStamina = false;
+			if (attacker.Stamina < staminaUsage)
+			{
+				lowStamina = true;
+				Send.Notice(attacker, Localization.Get("Your stamina is too low to attack properly!"));
+			}
+			attacker.Stamina -= staminaUsage;
+			Send.StatUpdate(attacker, StatUpdateType.Private, Stat.Stamina);
+
 			// Against Combat Mastery
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
 			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
@@ -99,21 +115,42 @@ namespace Aura.Channel.Skills.Combat
 			attacker.StopMove();
 			var targetPosition = target.StopMove();
 
+
 			// Counter
 			if (Counterattack.Handle(target, attacker))
 				return CombatSkillResult.Okay;
 
-			var rightWeapon = attacker.Inventory.RightHand;
-			var leftWeapon = attacker.Inventory.LeftHand;
 			var magazine = attacker.Inventory.Magazine;
-			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0);
 			var maxHits = (byte)(dualWield ? 2 : 1);
 			int prevId = 0;
+
+			
 
 			for (byte i = 1; i <= maxHits; ++i)
 			{
 				var weapon = (i == 1 ? rightWeapon : leftWeapon);
 				var weaponIsKnuckle = (weapon != null && weapon.Data.HasTag("/knuckle/"));
+
+				
+
+				ICollection<Creature> targets = null;
+                if (weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0 || weapon == null)
+				{
+					targets = attacker.GetTargetableCreaturesInCone(weapon != null ? (int)weapon.Data.SplashRadius : 200, weapon != null ? (int)weapon.Data.SplashAngle : 20);
+
+					foreach (var splashTarget in targets)
+					{
+						if (splashTarget != target)
+						{
+							// Counter
+							if (Counterattack.Handle(target, attacker))
+								return CombatSkillResult.Okay;
+						}
+
+					}
+				}
+				
+				
 
 				AttackerAction aAction;
 				TargetAction tAction;
@@ -160,6 +197,10 @@ namespace Aura.Channel.Skills.Combat
 
 				// Base damage
 				var damage = (i == 1 ? attacker.GetRndRightHandDamage() : attacker.GetRndLeftHandDamage());
+				if(lowStamina)
+				{
+					damage = attacker.GetRndBareHandDamage();
+                }
 
 				// Critical Hit
 				var critChance = (i == 1 ? attacker.GetRightCritChance(target.Protection) : attacker.GetLeftCritChance(target.Protection));
@@ -239,11 +280,7 @@ namespace Aura.Channel.Skills.Combat
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
 				{
-<<<<<<< HEAD
 					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
-=======
-					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && skill.Info.Id != SkillId.FinalHit);
->>>>>>> 16ec0d4e2d5c7fbe0666ae08c26c93c495d799be
 					tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
 					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
 					{
@@ -266,6 +303,114 @@ namespace Aura.Channel.Skills.Combat
 
 				// Update current weapon
 				SkillHelper.UpdateWeapon(attacker, target, weapon);
+
+				var critSkill = attacker.Skills.Get(SkillId.CriticalHit);
+				if (weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0)
+				{
+					foreach (var splashTarget in targets)
+					{
+						if (splashTarget != target)
+						{
+							if (splashTarget.IsNotReadyToBeHit)
+								continue;
+							TargetAction tSplashAction = new TargetAction(CombatActionType.TakeHit, splashTarget, attacker, skill.Info.Id);
+
+							// Base damage
+							var damageSplash = (i == 1 ? attacker.GetRndRightHandDamage() : attacker.GetRndLeftHandDamage());
+							if (lowStamina)
+							{
+								damageSplash = attacker.GetRndBareHandDamage();
+							}
+
+							// Critical Hit
+							if (critSkill != null && tAction.Has(TargetOptions.Critical))
+							{
+								// Add crit bonus
+								var bonus = critSkill.RankData.Var1 / 100f;
+								damageSplash = damageSplash + (damageSplash * bonus);
+
+								// Set splashTarget option
+								tSplashAction.Set(TargetOptions.Critical);
+							}
+
+							// Subtract splashTarget def/prot
+							SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
+
+							// Defense
+							Defense.Handle(aAction, tSplashAction, ref damageSplash);
+
+							// Mana Shield
+							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction);
+
+							//Splash Damage Reduction
+							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0.2f;
+
+							// Deal with it!
+							if (damageSplash > 0)
+								splashTarget.TakeDamage(tSplashAction.Damage = damageSplash, attacker);
+
+							// Alert
+							Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, TargetMode.Alert);
+
+							// Evaluate caused damage
+							if (!splashTarget.IsDead)
+							{
+								if (tSplashAction.Type != CombatActionType.Defended)
+								{
+									splashTarget.Stability -= (this.GetStabilityReduction(attacker, weapon) / maxHits) / 2;  //Less stability reduction for splash damage.
+
+									// React normal for CombatMastery, knock down if 
+									// FH and not dual wield, don't knock at all if dual.
+									if (skill.Info.Id != SkillId.FinalHit)
+									{
+										// Originally we thought you knock enemies back, unless it's a critical
+										// hit, but apparently you knock *down* under normal circumstances.
+										// More research to be done.
+										if (splashTarget.IsUnstable && splashTarget.Is(RaceStands.KnockBackable))
+											//tSplashAction.Set(tSplashAction.Has(TargetOptions.Critical) ? TargetOptions.KnockDown : TargetOptions.KnockBack);
+											tSplashAction.Set(TargetOptions.KnockDown);
+										if (splashTarget.Life < 0)
+											tSplashAction.Set(TargetOptions.KnockDown);
+									}
+									else if (!dualWield && !weaponIsKnuckle)
+									{
+										splashTarget.Stability = Creature.MinStability;
+										tSplashAction.Set(TargetOptions.KnockDown);
+									}
+								}
+							}
+							else
+							{
+								tSplashAction.Set(TargetOptions.FinishingKnockDown);
+							}
+
+							// React to knock back
+							if (tSplashAction.IsKnockBack && tSplashAction.Type != CombatActionType.Defended)
+							{
+								attacker.Shove(splashTarget, KnockBackDistance);
+							}
+
+
+							// Set stun time
+							if (tSplashAction.Type != CombatActionType.Defended)
+							{
+								tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
+
+								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
+								{
+									//Timer for getting back up.
+									System.Timers.Timer getUpTimer = new System.Timers.Timer(tSplashAction.Stun - 1000);
+
+									getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
+									getUpTimer.Enabled = true;
+								}
+							}
+
+							cap.Add(tSplashAction);
+						}
+
+					}
+				}
 
 				cap.Handle();
 

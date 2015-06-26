@@ -195,7 +195,7 @@ namespace Aura.Channel.Network.Handlers
 			// Check Mana
 			if (creature.Mana < skill.RankData.ManaCost)
 			{
-				Send.SystemMessage(creature, Localization.Get("Insufficient Mana"));
+				Send.Notice(creature, Localization.Get("Unable to use the skill. Insufficient Mana."));
 				Send.SkillPrepareSilentCancel(creature, skillId);
 				return;
 			}
@@ -203,7 +203,7 @@ namespace Aura.Channel.Network.Handlers
 			// Check Stamina
 			if (creature.Stamina < skill.RankData.StaminaCost)
 			{
-				Send.SystemMessage(creature, Localization.Get("Insufficient Stamina"));
+				Send.Notice(creature, Localization.Get("Unable to use the skill. Insufficient Stamina."));
 				Send.SkillPrepareSilentCancel(creature, skillId);
 				return;
 			}

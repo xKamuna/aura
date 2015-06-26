@@ -177,6 +177,24 @@ namespace Aura.Channel.Skills.Combat
 			if (Counterattack.Handle(target, attacker))
 				return CombatSkillResult.Okay;
 
+			var weapon = attacker.Inventory.RightHand;
+			ICollection<Creature> targets = null;
+			if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0 || weapon == null)
+			{
+				targets = attacker.GetTargetableCreaturesInCone(weapon != null ? (int)weapon.Data.SplashRadius : 200, weapon != null ? (int)weapon.Data.SplashAngle : 20);
+
+				foreach (var splashTarget in targets)
+				{
+					if (splashTarget != target)
+					{
+						// Counter
+						if (Counterattack.Handle(target, attacker))
+							return CombatSkillResult.Okay;
+					}
+
+				}
+			}
+
 			// Prepare combat actions
 			var aAction = new AttackerAction(CombatActionType.HardHit, attacker, skill.Info.Id, targetEntityId);
 			aAction.Set(AttackerOptions.Result | AttackerOptions.KnockBackHit2);
@@ -244,6 +262,76 @@ namespace Aura.Channel.Skills.Combat
 
 			// Update both weapons
 			SkillHelper.UpdateWeapon(attacker, target, attacker.RightHand, attacker.LeftHand);
+
+			var critSkill = attacker.Skills.Get(SkillId.CriticalHit);
+			if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0)
+			{
+				foreach (var splashTarget in targets)
+				{
+					if (splashTarget != target)
+					{
+						if (splashTarget.IsNotReadyToBeHit)
+							continue;
+						TargetAction tSplashAction = new TargetAction(CombatActionType.TakeHit, splashTarget, attacker, skill.Info.Id);
+						tSplashAction.Set(TargetOptions.Result | TargetOptions.Smash);
+
+						// Base damage
+						var damageSplash = this.GetDamage(attacker, skill);
+
+						// Critical Hit
+
+						if (critSkill != null && tAction.Has(TargetOptions.Critical))
+						{
+							// Add crit bonus
+							var bonus = critSkill.RankData.Var1 / 100f;
+							damageSplash = damageSplash + (damageSplash * bonus);
+
+							// Set splashTarget option
+							tSplashAction.Set(TargetOptions.Critical);
+						}
+
+						// Subtract splashTarget def/prot
+						SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
+
+						// Defense
+						Defense.Handle(aAction, tSplashAction, ref damageSplash);
+
+						// Mana Shield
+						ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction);
+
+						//Splash Damage Reduction
+						damageSplash *= skill.Info.Rank < SkillRank.R1 ? 0.1f : 0.2f;
+
+						// Deal with it!
+						if (damageSplash > 0)
+							splashTarget.TakeDamage(tSplashAction.Damage = damageSplash, attacker);
+
+						// Alert
+						Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, TargetMode.Alert);
+
+						if (splashTarget.IsDead)
+							tSplashAction.Set(TargetOptions.FinishingHit | TargetOptions.Finished);
+
+						splashTarget.Stun = tSplashAction.Stun = StunTime;
+						splashTarget.Stability = Creature.MinStability;
+
+						if (!splashTarget.IsDead)
+						{
+							//Timer for getting back up.
+							System.Timers.Timer getUpTimer = new System.Timers.Timer(tSplashAction.Stun + AfterUseStun - 1000);
+
+							getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
+							getUpTimer.Enabled = true;
+						}
+
+						// Set knockbacked position
+						attacker.Shove(splashTarget, KnockbackDistance);
+
+						cap.Add(tSplashAction);
+					}
+
+				}
+			}
 
 			// Action!
 			cap.Handle();

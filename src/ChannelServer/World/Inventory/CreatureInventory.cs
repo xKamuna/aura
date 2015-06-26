@@ -1244,6 +1244,10 @@ namespace Aura.Channel.World.Inventory
 				return;
 
 			item.OptionInfo.Durability = Math.Max(0, item.OptionInfo.Durability - amount);
+			if(item.Durability == 0)
+			{
+				Send.Notice(_creature, Localization.Get("Your equipment's durability has reached 0.")); //TODO: Replace this with the name of the actual weapon.
+			}
 			Send.ItemDurabilityUpdate(_creature, item);
 		}
 	}

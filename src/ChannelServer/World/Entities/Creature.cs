@@ -1265,13 +1265,11 @@ namespace Aura.Channel.World.Entities
 			var targetRange = target.RaceData.AttackRange * target.BodyScale;
 
 			var result = 156f; // Default found in the client (for reference)
-			//Giant Spiders can't attack properly with this forumla... edited.
 
 			if ((attackerRange < 300 && targetRange < 300) || (attackerRange >= 300 && attackerRange > targetRange))
 				result = ((attackerRange + targetRange) / 2);
 			else
 				result = targetRange;
-			//result = Math.Max(targetRange, attackerRange);
 
 			// A little something extra
 			result += 25;
@@ -1293,6 +1291,16 @@ namespace Aura.Channel.World.Entities
 			var min = this.AttackMinBase + this.AttackMinBaseMod + this.RightAttackMinMod;
 			var max = this.AttackMaxBase + this.AttackMaxBaseMod + this.RightAttackMaxMod;
 			var balance = this.BalanceBase + this.BalanceBaseMod + this.RightBalanceMod;
+
+			return this.GetRndDamage(min, max, balance);
+		}
+
+		public virtual float GetRndBareHandDamage()
+		{
+			// Checks in the properties should make this work (right = rh weapon or bare hand)
+			var min = this.AttackMinBase + this.AttackMinBaseMod;
+			var max = this.AttackMaxBase + this.AttackMaxBaseMod;
+			var balance = this.BalanceBase + this.BalanceBaseMod;
 
 			return this.GetRndDamage(min, max, balance);
 		}
@@ -1911,9 +1919,7 @@ namespace Aura.Channel.World.Entities
 		}
 
 		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
-		{
-			//var attackerRange = this.RaceData.AttackRange * this.BodyScale;
-			//range -= (int)attackerRange;
+		{	
 			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
 			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
 			return targetable;

@@ -8,6 +8,7 @@ using Aura.Channel.World.Entities;
 using Aura.Mabi.Const;
 using Aura.Mabi.Network;
 using Aura.Shared.Util;
+using System.Collections.Generic;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -151,8 +152,6 @@ namespace Aura.Channel.Skills.Combat
 				tAction.Stun = TargetStun;
 				cap.Add(tAction);
 
-				// TODO: Splash damage
-
 				// Damage
 				var damage = this.GetDamage(attacker, skill);
 
@@ -196,11 +195,87 @@ namespace Aura.Channel.Skills.Combat
 					if ((TargetOptions.KnockDown & tAction.Options) != 0)
 					{
 						//Timer for getting back up.
-						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
 
 						getUpTimer.Elapsed += (sender, e) => target.GetBackUp(sender, e, getUpTimer);
 						getUpTimer.Enabled = true;
 					}
+				}
+				var weapon = attacker.Inventory.RightHand;
+				var critSkill = attacker.Skills.Get(SkillId.CriticalHit);
+				if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0)
+				{
+					ICollection<Creature> targets = attacker.GetTargetableCreaturesInCone(weapon != null ? (int)weapon.Data.SplashRadius : 200, weapon != null ? (int)weapon.Data.SplashAngle : 20);
+					foreach (var splashTarget in targets)
+					{
+						if (splashTarget != target)
+						{
+							if (splashTarget.IsNotReadyToBeHit)
+								continue;
+							TargetAction tSplashAction = new TargetAction(CombatActionType.TakeHit, splashTarget, attacker, skill.Info.Id);
+							tSplashAction.Set(TargetOptions.Result | TargetOptions.CleanHit);
+							splashTarget.Stun = TargetStun;
+
+							// Base damage
+							var damageSplash = this.GetDamage(attacker, skill);
+
+							// Critical Hit
+
+							if (critSkill != null && tAction.Has(TargetOptions.Critical))
+							{
+								// Add crit bonus
+								var bonus = critSkill.RankData.Var1 / 100f;
+								damageSplash = damageSplash + (damageSplash * bonus);
+
+								// Set splashTarget option
+								tSplashAction.Set(TargetOptions.Critical);
+							}
+
+							// Subtract splashTarget def/prot
+							SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
+
+							// Defense
+							Defense.Handle(aAction, tSplashAction, ref damageSplash);
+
+							// Mana Shield
+							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction);
+
+							//Splash Damage Reduction
+							damageSplash *= skill.Info.Rank < SkillRank.R1 ? 0.1f : 0.2f;
+
+							// Deal with it!
+							if (damageSplash > 0)
+								splashTarget.TakeDamage(tSplashAction.Damage = damageSplash, attacker);
+
+							attacker.Shove(splashTarget, KnockBackDistance);
+
+							// Alert
+							Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, TargetMode.Alert);
+
+							tAction.Set(TargetOptions.KnockDownFinish);
+
+							if (splashTarget.IsDead)
+							{
+								aAction.Set(AttackerOptions.KnockBackHit1);
+								tSplashAction.Set(TargetOptions.Finished);
+							}
+							else
+							{
+								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
+								{
+									//Timer for getting back up.
+									System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
+
+									getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
+									getUpTimer.Enabled = true;
+								}
+							}
+
+							cap.Add(tSplashAction);
+						}
+
+					}
+
 				}
 			}
 			else

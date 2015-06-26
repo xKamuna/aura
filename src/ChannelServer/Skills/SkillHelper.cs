@@ -73,6 +73,10 @@ namespace Aura.Channel.Skills
 
 					weapon.Durability -= reduce;
 					Send.ItemDurabilityUpdate(attacker, weapon);
+					if (weapon.Durability == 0)
+					{
+						Send.Notice(attacker, Localization.Get("Your equipment's durability has reached 0.")); //TODO: Replace this with the name of the actual weapon.
+					}
 				}
 
 				// Proficiency

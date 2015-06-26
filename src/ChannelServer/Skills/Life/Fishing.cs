@@ -167,7 +167,10 @@ namespace Aura.Channel.Skills.Life
 
 				// Check rod durability
 				if (creature.RightHand.Durability == 0)
+				{
+					Send.Notice(creature, Localization.Get("Your equipment's durability has reached 0."));
 					cancel = true;
+				}
 			}
 
 			// Remove bait

@@ -35,13 +35,13 @@ namespace Aura.Channel.Skills.Base
 			// Check mana and stamina
 			if (!this.CheckMana(creature, skill))
 			{
-				Send.SystemMessage(creature, Localization.Get("Insufficient Mana"));
+				Send.Notice(creature, Localization.Get("Unable to use the skill. Insufficient Mana."));
 				Send.SkillStartSilentCancel(creature, skill.Info.Id);
 				return;
 			}
 			if (!this.CheckStamina(creature, skill))
 			{
-				Send.SystemMessage(creature, Localization.Get("Insufficient Stamina"));
+				Send.Notice(creature, Localization.Get("Unable to use the skill. Insufficient Stamina."));
 				Send.SkillStartSilentCancel(creature, skill.Info.Id);
 				return;
 			}

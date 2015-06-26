@@ -182,6 +182,16 @@ namespace Aura.Channel.Skills.Combat
 
 				// Calculate damage
 				var damage = attacker.GetRndTotalDamage();
+				if (attacker.Inventory.RightHand != null && (
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/bow01/") ||
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/bow/") ||
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/crossbow/") ||
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/shuriken/") ||
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/atlatl/") ||
+				attacker.Inventory.RightHand.Data.HasTag("/weapon/gun/")))
+				{
+					damage = attacker.GetRndBareHandDamage();
+				}
 				damage *= skill.RankData.Var1 / 100f;
 
 				// Handle skills and reductions
@@ -289,18 +299,19 @@ namespace Aura.Channel.Skills.Combat
 			var range = 300f;
 			var knuckleMod = 0.4f;
 
-			if (skill.Info.Rank >= SkillRank.R5)
-			{
-				range = 400f;
-				knuckleMod = 0.5f;
-			}
-			else if (skill.Info.Rank >= SkillRank.R1)
+			if (skill.Info.Rank >= SkillRank.R1)
 			{
 				range = 500f;
 				knuckleMod = 0.6f;
 			}
+			else if (skill.Info.Rank >= SkillRank.R5)
+			{
+				range = 400f;
+				knuckleMod = 0.5f;
+			}
+			
 
-			if (attacker.RightHand != null && attacker.RightHand.Data.WeaponType == 9)
+			if (attacker.RightHand != null && attacker.RightHand.Data.HasTag("/weapon/knuckle/"))
 				range *= knuckleMod;
 
 			return (int)range;
