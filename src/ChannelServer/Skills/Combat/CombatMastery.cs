@@ -194,24 +194,18 @@ namespace Aura.Channel.Skills.Combat
 					tAction.Options |= TargetOptions.Result;
 					
 				}
-				else
-				{
-					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
-					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
-				}
-
-				if (attacker.InterceptingSkillId == SkillId.CombatMastery)
+				else if (attacker.InterceptingSkillId == SkillId.CombatMastery)
 				{
 					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
 					aAction.Options |= AttackerOptions.Result;
-					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.CombatMastery);
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, target.Skills.IsActive(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
 					tAction.Options |= TargetOptions.Result;
 
 				}
 				else
 				{
 					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
-					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, skill.Info.Id);
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, target.Skills.IsActive(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
 				}
 
 				attacker.InterceptingSkillId = SkillId.None;
@@ -242,7 +236,9 @@ namespace Aura.Channel.Skills.Combat
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 
 				// Defense
+				var tActionOldType = tAction.Type;
 				Defense.Handle(aAction, tAction, ref damage);
+				
 
 				// Mana Shield
 				ManaShield.Handle(target, ref damage, tAction);
@@ -250,6 +246,11 @@ namespace Aura.Channel.Skills.Combat
 				// Deal with it!
 				if (damage > 0)
 					target.TakeDamage(tAction.Damage = damage, attacker);
+
+				if (tAction.Type == CombatActionType.Defended && target.Life <= 0)
+				{
+					tAction.Type = tActionOldType;
+                }
 
 				// Aggro
 				target.Aggro(attacker);
@@ -330,6 +331,7 @@ namespace Aura.Channel.Skills.Combat
 					{
 						tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
 					}
+
 					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
 					{
 						attacker.AttackDelayTime = DateTime.Now.AddMilliseconds(GetAttackerStun(attacker, weapon, true));

@@ -338,6 +338,7 @@ namespace Aura.Channel.World.Entities
 			if(this.Target == null)
 			{
 				this.Target = target;
+				Send.SetCombatTarget(this, target.EntityId, TargetMode.Normal);
 			}
 		}
 	}

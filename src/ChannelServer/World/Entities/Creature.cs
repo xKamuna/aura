@@ -2011,6 +2011,7 @@ namespace Aura.Channel.World.Entities
 		{
 			this.IsInBattleStance = true;
 			this.Target = target;
+			Send.SetCombatTarget(this, target.EntityId, TargetMode.Aggro);
 		}
 
 		/// <summary>
