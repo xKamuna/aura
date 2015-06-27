@@ -417,7 +417,55 @@ namespace Aura.Channel.World.Inventory
 			{
 				if (item.Durability == 0 && item.OptionInfo.DurabilityOriginal != 0)
 					return false;
+				if ((target == Pocket.Face || target == Pocket.Hair))
+					return false;
+				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) && !item.HasTag("/lefthand/"))
+					return false;
+				if ((target == Pocket.RightHand1 || target == Pocket.RightHand2) && !item.HasTag("/righthand/"))
+					return false;
+				if ((target == Pocket.Accessory1 || target == Pocket.Accessory2) && !item.HasTag("/accessary/"))
+					return false;
+				if ((target == Pocket.Armor || target == Pocket.ArmorStyle) && !item.HasTag("/armor/"))
+					return false;
+				if ((target == Pocket.Glove || target == Pocket.GloveStyle) && !item.HasTag("/glove/"))
+					return false;
+				if ((target == Pocket.Head || target == Pocket.HeadStyle) && !item.HasTag("/head/"))
+					return false;
+				//TODO: Prevent storing non-magazines into the magazine slot.
+				if ((target == Pocket.Magazine1 || target == Pocket.Magazine2)
+					&& (!item.HasTag("/arrow/") && RightHand.HasTag("/bow/") || item.HasTag("/arrow/") && !RightHand.HasTag("/bow/"))
+					&& (!item.HasTag("/bolt/") && RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && !RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && RightHand.Data.Id == 40220) //40220 is Ballista
+					&& (!item.HasTag("/giant_throw/") && RightHand.HasTag("/atlatl/") || item.HasTag("/giant_throw/") && !RightHand.HasTag("/atlatl/"))
+					&& (!item.HasTag("/ballista_bolt/") && RightHand.Data.Id == 40220 || item.HasTag("/ballista_bolt/") && RightHand.Data.Id != 40220)
+					&& (!item.HasTag("/bullet/") && RightHand.HasTag("/dualgun/") || item.HasTag("/bullet/") && !RightHand.HasTag("/dualgun/")))
+                { return false; }
+				if ((target == Pocket.Robe || target == Pocket.RobeStyle) && !item.HasTag("/robe/"))
+					return false;
+				if ((target == Pocket.Shoe || target == Pocket.ShoeStyle) && !item.HasTag("/foot/"))
+					return false;
 
+				if ((target == Pocket.Accessory1
+					|| target == Pocket.Accessory2
+					|| target == Pocket.Armor
+					|| target == Pocket.Glove
+					|| target == Pocket.Head
+					|| target == Pocket.Magazine1
+					|| target == Pocket.Magazine2
+					|| target == Pocket.RightHand1 
+					|| target == Pocket.RightHand2 
+					|| target == Pocket.Robe 
+					|| target == Pocket.Shoe) && !item.HasTag("/equip/"))
+					{ return false; }
+				if ((target == Pocket.ArmorStyle
+					|| target == Pocket.GloveStyle
+					|| target == Pocket.HeadStyle
+					|| target == Pocket.RobeStyle
+					|| target == Pocket.ShoeStyle) && !item.HasTag("/equip/") && !item.HasTag("/deco_equip/"))
+				{ return false; }
+
+
+				if (!item.HasTag("/equip/"))
+					return false;
 				if  (_creature.IsElf && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
 							item.Data.Type == ItemType.Weapon ||
@@ -445,6 +493,13 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if (!_creature.IsHuman && !_creature.IsElf && item.Data.HasTag("/human_elf_only/"))
 					return false;
+
+				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+						(
+							!RightHand.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
+						)
+					)
+				{ return false; }
 			}
 			var source = item.Info.Pocket;
 			var amount = item.Info.Amount;
@@ -1091,7 +1146,7 @@ namespace Aura.Channel.World.Inventory
 		{
 			var rightItem = this.RightHand;
 
-			// Move 2H weapon if shield is euipped
+			// Move 2H weapon if shield is equipped
 			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand))
 			{
 				// Switch item
@@ -1148,6 +1203,8 @@ namespace Aura.Channel.World.Inventory
 			if (pocketOfInterest == Pocket.None)
 				return;
 
+			
+
 			// Check LeftHand first, switch to Magazine if it's empty
 			var leftPocket = pocketOfInterest + 2; // Left Hand 1/2
 			var leftItem = _pockets[leftPocket].GetItemAt(0, 0);
@@ -1160,6 +1217,14 @@ namespace Aura.Channel.World.Inventory
 				if (leftItem == null)
 					return;
 			}
+
+			if (!item.IsTwoHand
+				&& !(leftPocket == Pocket.Magazine1 || leftPocket == Pocket.Magazine2)
+                && !(item.HasTag("/inverse_transmutator/") && !LeftHand.HasTag("/inverse_transmutator/"))
+				) //Only unequip left hand if item is two handed, is a magazine, or the left hand has a guard cylinder and the item is not a cylinder.
+            { return; }
+
+
 
 			// Try inventory first.
 			// TODO: List of pockets stuff can be auto-moved to.

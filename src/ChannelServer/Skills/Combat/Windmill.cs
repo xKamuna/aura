@@ -189,7 +189,7 @@ namespace Aura.Channel.Skills.Combat
 				attacker.RightHand.Data.HasTag("/weapon/crossbow/") ||
 				attacker.RightHand.Data.HasTag("/weapon/shuriken/") ||
 				attacker.RightHand.Data.HasTag("/weapon/atlatl/") ||
-				attacker.RightHand.Data.HasTag("/weapon/gun/")))
+				attacker.RightHand.Data.HasTag("/weapon/gun/dualgun/")))
 				{
 					damage = attacker.GetRndBareHandDamage();
 				}

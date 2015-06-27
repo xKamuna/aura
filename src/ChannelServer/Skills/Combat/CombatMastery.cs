@@ -72,7 +72,7 @@ namespace Aura.Channel.Skills.Combat
 
 			var rightWeapon = attacker.RightHand;
 			var leftWeapon = attacker.Inventory.LeftHand;
-			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0);
+			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0 && (leftWeapon.HasTag("/weapon/edged/") || leftWeapon.HasTag("/weapon/blunt/")));
 
 			
 			var staminaUsage = (rightWeapon != null && rightWeapon.Data.StaminaUsage != 0 ? rightWeapon.Data.StaminaUsage : 0.7f) + (dualWield ? leftWeapon.Data.StaminaUsage : 0f);
@@ -170,8 +170,8 @@ namespace Aura.Channel.Skills.Combat
 			var maxHits = (byte)(dualWield ? 2 : 1);
 			int prevId = 0;
 
-			
 
+			var defenseStun = 0;
 			for (byte i = 1; i <= maxHits; ++i)
 			{
 				var weapon = (i == 1 ? rightWeapon : leftWeapon);
@@ -240,6 +240,10 @@ namespace Aura.Channel.Skills.Combat
 				// Defense
 				var tActionOldType = tAction.Type;
 				Defense.Handle(aAction, tAction, ref damage);
+				if(i == 1 && tAction.Type == CombatActionType.Defended)
+				{
+					defenseStun = tAction.Stun;
+                }
 				
 
 				// Mana Shield
@@ -458,7 +462,10 @@ namespace Aura.Channel.Skills.Combat
 							{
 								if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
 								{
-									tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
+									if (defenseStun != 0)
+										tSplashAction.Stun = (short)defenseStun;
+									else
+										tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
 								}
 								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
 								{
