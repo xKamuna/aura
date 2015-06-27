@@ -431,13 +431,16 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if ((target == Pocket.Head || target == Pocket.HeadStyle) && !item.HasTag("/head/"))
 					return false;
-				//TODO: Prevent storing non-magazines into the magazine slot.
 				if ((target == Pocket.Magazine1 || target == Pocket.Magazine2)
-					&& (!item.HasTag("/arrow/") && RightHand.HasTag("/bow/") || item.HasTag("/arrow/") && !RightHand.HasTag("/bow/"))
+					&&	(
+					RightHand == null 
+					|| (!item.HasTag("/arrow/") && RightHand.HasTag("/bow/") || item.HasTag("/arrow/") && !RightHand.HasTag("/bow/"))
 					&& (!item.HasTag("/bolt/") && RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && !RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && RightHand.Data.Id == 40220) //40220 is Ballista
 					&& (!item.HasTag("/giant_throw/") && RightHand.HasTag("/atlatl/") || item.HasTag("/giant_throw/") && !RightHand.HasTag("/atlatl/"))
 					&& (!item.HasTag("/ballista_bolt/") && RightHand.Data.Id == 40220 || item.HasTag("/ballista_bolt/") && RightHand.Data.Id != 40220)
-					&& (!item.HasTag("/bullet/") && RightHand.HasTag("/dualgun/") || item.HasTag("/bullet/") && !RightHand.HasTag("/dualgun/")))
+					&& (!item.HasTag("/bullet/") && RightHand.HasTag("/dualgun/") || item.HasTag("/bullet/") && !RightHand.HasTag("/dualgun/"))
+						)
+					)
                 { return false; }
 				if ((target == Pocket.Robe || target == Pocket.RobeStyle) && !item.HasTag("/robe/"))
 					return false;
@@ -496,7 +499,7 @@ namespace Aura.Channel.World.Inventory
 
 				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
-							!RightHand.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
+							RightHand != null && !RightHand.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
 						)
 					)
 				{ return false; }
@@ -1220,7 +1223,7 @@ namespace Aura.Channel.World.Inventory
 
 			if (!item.IsTwoHand
 				&& !(leftPocket == Pocket.Magazine1 || leftPocket == Pocket.Magazine2)
-                && !(item.HasTag("/inverse_transmutator/") && !LeftHand.HasTag("/inverse_transmutator/"))
+                && !(item.HasTag("/inverse_transmutator/") && !leftItem.HasTag("/inverse_transmutator/"))
 				) //Only unequip left hand if item is two handed, is a magazine, or the left hand has a guard cylinder and the item is not a cylinder.
             { return; }
 
