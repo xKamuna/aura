@@ -988,6 +988,8 @@ namespace Aura.Channel.Scripting.Scripts
 		/// <returns></returns>
 		protected IEnumerable Attack(int count, int timeout = 300000)
 		{
+			if (this.Creature.IsDead)
+				yield break;
 			if (this.Creature.Target == null)
 			{
 				this.Reset();
@@ -1095,6 +1097,8 @@ namespace Aura.Channel.Scripting.Scripts
 		/// <returns></returns>
 		protected IEnumerable PrepareSkill(SkillId skillId)
 		{
+			if (this.Creature.IsDead)
+				yield break;
 			// Get skill
 			var skill = this.Creature.Skills.Get(skillId);
 			if (skill == null)

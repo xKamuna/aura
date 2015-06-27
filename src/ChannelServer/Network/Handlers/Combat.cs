@@ -120,6 +120,8 @@ namespace Aura.Channel.Network.Handlers
 
 			var creature = client.GetCreatureSafe(packet.Id);
 
+			if (creature.IsDead)
+				return;
 			// Get skill
 			var skill = creature.Skills.ActiveSkill;
 			var combatMastery = creature.Skills.Get(SkillId.CombatMastery);

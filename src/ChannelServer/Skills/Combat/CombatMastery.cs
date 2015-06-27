@@ -58,7 +58,7 @@ namespace Aura.Channel.Skills.Combat
 			if (target.IsNotReadyToBeHit)
 				return CombatSkillResult.Okay;
 
-			if (attacker.IsStunned || attacker.IsOnAttackDelay)
+			if ((attacker.IsStunned || attacker.IsOnAttackDelay))
 				return CombatSkillResult.Okay;
 
 			if (!attacker.GetPosition().InRange(target.GetPosition(), attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)
@@ -87,26 +87,55 @@ namespace Aura.Channel.Skills.Combat
 
 			// Against Combat Mastery
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
-			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+			var simultaneousAttackStun = 0;
+			if(attacker.InterceptingSkillId != SkillId.CombatMastery && target.InterceptingSkillId != SkillId.CombatMastery)
 			{
-				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
-				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
-				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
+				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
 				{
-					target.InterceptingSkillId = SkillId.CombatMastery;
-					target.IgnoreAttackRange = true;
-					var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
-					if (skillHandler == null)
+					var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
+					var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
+					if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime && 
+						target.KnockDownTime.AddMilliseconds(targetStunTime) < DateTime.Now //If last knocked down within the time it takes for you to finish attacking.
+						|| attackerStunTime > targetStunTime && 
+						!Math2.Probability(((2725 - attackerStunTime) / 2500) * 100) //Probability in percentage that you will not lose.  2725 is 2500 (Slowest stun) + 225 (Fastest stun divided by two so that the fastest stun isn't 100%)
+						&& !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime && attacker.KnockDownTime.AddMilliseconds(attackerStunTime) < DateTime.Now)))
 					{
-						Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+						target.InterceptingSkillId = SkillId.CombatMastery;
+						target.IgnoreAttackRange = true;
+						var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+						if (skillHandler == null)
+						{
+							Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+							return CombatSkillResult.Okay;
+						}
+						skillHandler.Use(target, combatMastery, attacker.EntityId);
 						return CombatSkillResult.Okay;
 					}
-					skillHandler.Use(target, combatMastery, attacker.EntityId);
-					return CombatSkillResult.Okay;
-				}
-				else
-				{
-					attacker.InterceptingSkillId = SkillId.CombatMastery;
+					else
+					{
+						if (Math2.Probability(((2725 - attackerStunTime) / 2500) * 100)) //Probability in percentage that it will be an interception instead of a double hit.
+						{
+							attacker.InterceptingSkillId = SkillId.CombatMastery;
+						}
+						else
+						{
+							attacker.InterceptingSkillId = SkillId.CombatMastery;
+							target.InterceptingSkillId = SkillId.CombatMastery;
+							target.IgnoreAttackRange = true;
+							var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+							if (skillHandler == null)
+							{
+								Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+							}
+							else
+							{
+								skillHandler.Use(target, combatMastery, attacker.EntityId);
+								simultaneousAttackStun = attacker.Stun;
+								attacker.Stun = 0;
+							}
+						}
+
+					}
 				}
 			}
 
@@ -119,6 +148,23 @@ namespace Aura.Channel.Skills.Combat
 			// Counter
 			if (Counterattack.Handle(target, attacker))
 				return CombatSkillResult.Okay;
+
+			ICollection<Creature> targets = null;
+			if (rightWeapon != null && rightWeapon.Data.SplashRadius != 0 && rightWeapon.Data.SplashAngle != 0 || rightWeapon == null)
+			{
+				targets = attacker.GetTargetableCreaturesInCone(rightWeapon != null ? (int)rightWeapon.Data.SplashRadius : 200, rightWeapon != null ? (int)rightWeapon.Data.SplashAngle : 20);
+
+				foreach (var splashTarget in targets)
+				{
+					if (splashTarget != target)
+					{
+						// Counter
+						if (Counterattack.Handle(target, attacker))
+							return CombatSkillResult.Okay;
+					}
+
+				}
+			}
 
 			var magazine = attacker.Inventory.Magazine;
 			var maxHits = (byte)(dualWield ? 2 : 1);
@@ -133,27 +179,13 @@ namespace Aura.Channel.Skills.Combat
 
 				
 
-				ICollection<Creature> targets = null;
-                if (weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0 || weapon == null)
-				{
-					targets = attacker.GetTargetableCreaturesInCone(weapon != null ? (int)weapon.Data.SplashRadius : 200, weapon != null ? (int)weapon.Data.SplashAngle : 20);
-
-					foreach (var splashTarget in targets)
-					{
-						if (splashTarget != target)
-						{
-							// Counter
-							if (Counterattack.Handle(target, attacker))
-								return CombatSkillResult.Okay;
-						}
-
-					}
-				}
+				
 				
 				
 
 				AttackerAction aAction;
 				TargetAction tAction;
+				//Please note that the CombatActionType for the interception may be different from official servers.  Needs more research.
 				if (attacker.InterceptingSkillId == SkillId.Smash)
 				{
 					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
@@ -223,7 +255,7 @@ namespace Aura.Channel.Skills.Combat
 				target.Aggro(attacker);
 
 					// Evaluate caused damage
-					if (!target.IsDead)
+				if (!target.IsDead)
 				{
 					if (tAction.Type != CombatActionType.Defended)
 					{
@@ -286,7 +318,14 @@ namespace Aura.Channel.Skills.Combat
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
 				{
-					aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
+					if (simultaneousAttackStun == 0)
+					{
+						aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
+					}
+					else
+					{
+						aAction.Stun = (short)simultaneousAttackStun;
+					}
 					if (!target.Skills.IsActive(SkillId.FinalHit))
 					{
 						tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
