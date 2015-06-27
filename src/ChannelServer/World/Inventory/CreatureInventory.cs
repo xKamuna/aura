@@ -1224,6 +1224,7 @@ namespace Aura.Channel.World.Inventory
 			if (!item.IsTwoHand
 				&& !(leftPocket == Pocket.Magazine1 || leftPocket == Pocket.Magazine2)
                 && !(item.HasTag("/inverse_transmutator/") && !leftItem.HasTag("/inverse_transmutator/"))
+				&& !(!item.HasTag("/inverse_transmutator/") && leftItem.HasTag("/inverse_transmutator/"))
 				) //Only unequip left hand if item is two handed, is a magazine, or the left hand has a guard cylinder and the item is not a cylinder.
             { return; }
 
