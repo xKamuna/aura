@@ -1144,9 +1144,14 @@ namespace Aura.Channel.World.Inventory
 
 			// Move 2H weapon if shield is equipped
 			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand) ||
-               ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
 							rightItem != null && !rightItem.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
+						)
+					) ||
+					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+						(
+							rightItem != null && rightItem.HasTag("/inverse_transmutator/") && !item.HasTag("/inverse_transmutator/")
 						)
 					)
 				)
