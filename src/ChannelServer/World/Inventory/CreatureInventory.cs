@@ -496,13 +496,6 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if (!_creature.IsHuman && !_creature.IsElf && item.Data.HasTag("/human_elf_only/"))
 					return false;
-
-				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
-						(
-							RightHand != null && !RightHand.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
-						)
-					)
-				{ return false; }
 			}
 			var source = item.Info.Pocket;
 			var amount = item.Info.Amount;
@@ -1150,7 +1143,13 @@ namespace Aura.Channel.World.Inventory
 			var rightItem = this.RightHand;
 
 			// Move 2H weapon if shield is equipped
-			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand))
+			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand) ||
+               ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+						(
+							rightItem != null && !rightItem.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
+						)
+					)
+				)
 			{
 				// Switch item
 				var success = _pockets[source].Add(rightItem);
