@@ -91,7 +91,7 @@ namespace Aura.Shared.Util
 		public static bool Probability(double prob)
 		{
 			var rnd = RandomProvider.Get();
-			return (100 * rnd.NextDouble()) < Clamp(0, 100, prob);
+			return (100 * rnd.NextDouble()) <= Clamp(0.0, 100.0, prob);
 		}
 
 	}

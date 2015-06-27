@@ -337,6 +337,7 @@ namespace Aura.Channel.World.Entities
 			this.IsInBattleStance = true;
 			if(this.Target == null)
 			{
+				Send.CombatTargetUpdate(this, 0);
 				this.Target = target;
 				Send.SetCombatTarget(this, target.EntityId, TargetMode.Normal);
 			}

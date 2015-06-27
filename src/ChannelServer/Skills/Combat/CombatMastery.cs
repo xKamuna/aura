@@ -206,6 +206,8 @@ namespace Aura.Channel.Skills.Combat
 				{
 					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
 					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, target.Skills.IsActive(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
+					aAction.Options |= AttackerOptions.Result;
+					tAction.Options |= TargetOptions.Result;
 				}
 
 				attacker.InterceptingSkillId = SkillId.None;
