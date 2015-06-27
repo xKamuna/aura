@@ -146,7 +146,11 @@ namespace Aura.Channel.Skills.Combat
 			{
 				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
-				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime || attackerStunTime > targetStunTime && !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime)))
+				if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime &&
+						target.KnockDownTime.AddMilliseconds(targetStunTime) < DateTime.Now //If last knocked down within the time it takes for you to finish attacking.
+						|| attackerStunTime > targetStunTime &&
+						!Math2.Probability(((2725 - attackerStunTime) / 2500) * 100) //Probability in percentage that you will not lose.  2725 is 2500 (Slowest stun) + 225 (Fastest stun divided by two so that the fastest stun isn't 100%)
+						&& !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime && attacker.KnockDownTime.AddMilliseconds(attackerStunTime) < DateTime.Now)))
 				{
 					target.InterceptingSkillId = SkillId.Smash;
 					target.IgnoreAttackRange = true;
