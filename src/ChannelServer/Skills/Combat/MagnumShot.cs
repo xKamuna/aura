@@ -163,6 +163,7 @@ namespace Aura.Channel.Skills.Combat
 				var critChance = attacker.GetRightCritChance(target.Protection);
 				CriticalHit.Handle(attacker, critChance, ref damage, tAction);
 
+				var maxDamage = damage; //Damage without Defense and Protection
 				// Subtract target def/prot
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 
@@ -170,7 +171,7 @@ namespace Aura.Channel.Skills.Combat
 				Defense.Handle(aAction, tAction, ref damage);
 
 				// Mana Shield
-				ManaShield.Handle(target, ref damage, tAction);
+				ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
 				// Deal with it!
 				if (damage > 0)
@@ -231,14 +232,15 @@ namespace Aura.Channel.Skills.Combat
 								tSplashAction.Set(TargetOptions.Critical);
 							}
 
+							var maxDamageSplash = damage; //Damage without Defense and Protection
 							// Subtract splashTarget def/prot
 							SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
 
 							// Defense
-							Defense.Handle(aAction, tSplashAction, ref damageSplash);
+							Defense.Handle(aAction, tSplashAction, ref damageSplash, true);
 
 							// Mana Shield
-							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction);
+							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction, maxDamageSplash);
 
 							//Splash Damage Reduction
 							damageSplash *= skill.Info.Rank < SkillRank.R1 ? 0.1f : 0.2f;

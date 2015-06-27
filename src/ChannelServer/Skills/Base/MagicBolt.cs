@@ -184,12 +184,13 @@ namespace Aura.Channel.Skills.Base
 
 			// Damage
 			var damage = this.GetDamage(attacker, skill);
-
+			var fakeDamage = 1f; //Just fake damage so that damage does not get negated.
+			var maxDamage = damage; //Damage without Defense and Protection
 			// Reduce damage
 			if (this.Defendable)
-				Defense.Handle(aAction, tAction, ref damage);
+				Defense.Handle(aAction, tAction, ref fakeDamage);
 			SkillHelper.HandleMagicDefenseProtection(target, ref damage);
-			ManaShield.Handle(target, ref damage, tAction);
+			ManaShield.Handle(target, ref damage, tAction, maxDamage, true);
 
 			// Deal damage
 			if (damage > 0)

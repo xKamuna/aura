@@ -6,6 +6,7 @@ using Aura.Channel.Skills.Base;
 using Aura.Channel.World.Entities;
 using Aura.Mabi;
 using Aura.Mabi.Const;
+using System;
 
 namespace Aura.Channel.Skills.Magic
 {
@@ -62,7 +63,7 @@ namespace Aura.Channel.Skills.Magic
 		/// <param name="target"></param>
 		/// <param name="damage"></param>
 		/// <param name="tAction"></param>
-		public static void Handle(Creature target, ref float damage, TargetAction tAction)
+		public static void Handle(Creature target, ref float damage, TargetAction tAction, float maxDamage, bool magic = false)
 		{
 			// Mana Shield active?
 			if (!target.Conditions.Has(ConditionsA.ManaShield))
@@ -74,7 +75,9 @@ namespace Aura.Channel.Skills.Magic
 				return;
 
 			// Var 1 = Efficiency
-			var manaDamage = damage / manaShield.RankData.Var1;
+			var manaDamage = maxDamage / manaShield.RankData.Var1;
+			if (magic)
+				SkillHelper.HandleMagicDefenseProtection(target, ref manaDamage, false, true);
 			if (target.Mana >= manaDamage)
 			{
 				// Damage is 0 if target's mana is enough to cover it
@@ -84,8 +87,8 @@ namespace Aura.Channel.Skills.Magic
 			{
 				// Set mana damage to target's mana and reduce the remaining
 				// damage from life if the mana is not enough.
-				damage -= (manaDamage - target.Mana) * manaShield.RankData.Var1;
 				manaDamage = target.Mana;
+				damage = Math.Min(1f, damage - manaDamage);
 			}
 
 			// Reduce mana

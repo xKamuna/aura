@@ -3,6 +3,7 @@
 
 using Aura.Channel.Network.Sending;
 using Aura.Channel.Skills.Base;
+using Aura.Channel.Skills.Magic;
 using Aura.Channel.World;
 using Aura.Channel.World.Entities;
 using Aura.Mabi.Const;
@@ -137,7 +138,9 @@ namespace Aura.Channel.Skills.Combat
 			var critChance = attacker.GetTotalCritChance(target.Protection) + skill.RankData.Var3;
 
 			CriticalHit.Handle(attacker, critChance, ref damage, tAction, true);
+			var maxDamage = damage; //Damage without Defense and Protection
 			SkillHelper.HandleDefenseProtection(target, ref damage, true, true);
+			ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
 			target.TakeDamage(tAction.Damage = damage, attacker);
 

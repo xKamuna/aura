@@ -27,7 +27,15 @@ namespace Aura.Channel.Skills
 		public static void HandleDefenseProtection(Creature target, ref float damage, bool defense = true, bool protection = true)
 		{
 			if (defense)
-				damage = Math.Max(1, damage - target.Defense);
+				damage = Math.Max(1, damage - target.Defense - (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusMeleePassive : 0));
+			if (protection && damage > 1)
+				damage = Math.Max(1, damage - (damage * target.Protection));
+		}
+
+		public static void HandleRangeDefenseProtection(Creature target, ref float damage, bool defense = true, bool protection = true)
+		{
+			if (defense)
+				damage = Math.Max(1, damage - target.Defense - (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusDefault : 0));
 			if (protection && damage > 1)
 				damage = Math.Max(1, damage - (damage * target.Protection));
 		}

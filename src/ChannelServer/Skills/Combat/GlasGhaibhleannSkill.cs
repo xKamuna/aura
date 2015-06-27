@@ -146,8 +146,9 @@ namespace Aura.Channel.Skills.Combat
 				CriticalHit.Handle(attacker, attacker.GetTotalCritChance(target.Protection), ref damage, tAction);
 
 				// Reduce damage
+				var maxDamage = damage; //Damage without Defense and Protection
 				SkillHelper.HandleDefenseProtection(target, ref damage);
-				ManaShield.Handle(target, ref damage, tAction);
+				ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
 				// Apply damage
 				target.TakeDamage(tAction.Damage = 300, attacker);

@@ -79,7 +79,7 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="tAction"></param>
 		/// <param name="damage"></param>
 		/// <returns></returns>
-		public static bool Handle(AttackerAction aAction, TargetAction tAction, ref float damage)
+		public static bool Handle(AttackerAction aAction, TargetAction tAction, ref float damage, bool ranged = false)
 		{
 			// Defense
 			if (!tAction.Creature.Skills.IsReady(SkillId.Defense))
@@ -97,7 +97,10 @@ namespace Aura.Channel.Skills.Combat
 			{
 				if (defenseSkill.IsOnCooldown)
 					return false;
-				damage = Math.Max(1, damage - defenseSkill.RankData.Var3);
+				var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
+				if (damage > shieldPassiveDefense)
+					damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
+				damage = Math.Max(1, damage - defenseSkill.RankData.Var3 - shieldPassiveDefense);
 			}
 			else
 			{

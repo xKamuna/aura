@@ -197,9 +197,10 @@ namespace Aura.Channel.Skills.Combat
 
 				// Handle skills and reductions
 				CriticalHit.Handle(attacker, attacker.GetTotalCritChance(0), ref damage, tAction);
+				var maxDamage = damage; //Damage without Defense and Protection
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 				Defense.Handle(aAction, tAction, ref damage);
-				ManaShield.Handle(target, ref damage, tAction);
+				ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
 				// Clean Hit if not defended nor critical
 				if (!tAction.Is(CombatActionType.Defended) && !tAction.Has(TargetOptions.Critical))

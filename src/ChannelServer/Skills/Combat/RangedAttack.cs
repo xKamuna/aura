@@ -172,14 +172,15 @@ namespace Aura.Channel.Skills.Combat
 				var critChance = attacker.GetRightCritChance(target.Protection);
 				CriticalHit.Handle(attacker, critChance, ref damage, tAction);
 
+				var maxDamage = damage; //Damage without Defense and Protection
 				// Subtract target def/prot
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 
 				// Defense
-				Defense.Handle(aAction, tAction, ref damage);
+				Defense.Handle(aAction, tAction, ref damage, true);
 
 				// Mana Shield
-				ManaShield.Handle(target, ref damage, tAction);
+				ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
 				// Deal with it!
 				if (damage > 0)
