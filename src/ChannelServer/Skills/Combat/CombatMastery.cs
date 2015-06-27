@@ -374,6 +374,9 @@ namespace Aura.Channel.Skills.Combat
 								damageSplash = attacker.GetRndBareHandDamage();
 							}
 
+							//Splash Damage Reduction
+							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0.2f;
+
 							// Critical Hit
 							if (critSkill != null && tAction.Has(TargetOptions.Critical))
 							{
@@ -394,15 +397,14 @@ namespace Aura.Channel.Skills.Combat
 							// Mana Shield
 							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction);
 
-							//Splash Damage Reduction
-							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0.2f;
+							
 
 							// Deal with it!
 							if (damageSplash > 0)
 								splashTarget.TakeDamage(tSplashAction.Damage = damageSplash, attacker);
 
-							// Alert
-							Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, TargetMode.Alert);
+							// Alert.  Probably doesn't matter, but make player normal target, instead of alert.
+							Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, splashTarget.IsPlayer ? TargetMode.Normal : TargetMode.Alert);
 
 							// Evaluate caused damage
 							if (!splashTarget.IsDead)
