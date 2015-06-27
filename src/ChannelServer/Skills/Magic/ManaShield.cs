@@ -75,9 +75,16 @@ namespace Aura.Channel.Skills.Magic
 				return;
 
 			// Var 1 = Efficiency
-			var manaDamage = maxDamage / manaShield.RankData.Var1;
+			var manaDamage = 0f;
 			if (magic)
-				SkillHelper.HandleMagicDefenseProtection(target, ref manaDamage, false, true);
+			{
+				manaDamage = maxDamage / manaShield.RankData.Var1;
+                SkillHelper.HandleMagicDefenseProtection(target, ref manaDamage, false, true);
+			}
+			else
+			{
+				manaDamage = (maxDamage - (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusMeleePassive : 0)) / manaShield.RankData.Var1;
+			}
 			if (target.Mana >= manaDamage)
 			{
 				// Damage is 0 if target's mana is enough to cover it
