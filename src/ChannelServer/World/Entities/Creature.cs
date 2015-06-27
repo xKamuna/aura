@@ -2007,11 +2007,18 @@ namespace Aura.Channel.World.Entities
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
 		/// <param name="creature"></param>
-		public virtual void Aggro(Creature target)
+		public virtual void Aggro(Creature target, bool alert = false)
 		{
 			this.IsInBattleStance = true;
 			this.Target = target;
-			Send.SetCombatTarget(this, target.EntityId, TargetMode.Aggro);
+			if (alert)
+			{
+				Send.SetCombatTarget(this, target.EntityId, TargetMode.Aggro);
+			}
+			else
+			{
+				Send.SetCombatTarget(this, target.EntityId, TargetMode.Alert);
+			}
 			Send.CombatTargetUpdate(this, target.EntityId);
 		}
 

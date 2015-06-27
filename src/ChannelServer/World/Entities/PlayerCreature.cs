@@ -332,14 +332,14 @@ namespace Aura.Channel.World.Entities
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
 		/// <param name="creature"></param>
-		public override void Aggro(Creature target)
+		public override void Aggro(Creature target, bool alert = false)
 		{
 			this.IsInBattleStance = true;
 			if(this.Target == null)
 			{
-				Send.CombatTargetUpdate(this, 0);
 				this.Target = target;
 				Send.SetCombatTarget(this, target.EntityId, TargetMode.Normal);
+				Send.CombatTargetUpdate(this, target.EntityId);
 			}
 		}
 	}

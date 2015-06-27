@@ -314,8 +314,8 @@ namespace Aura.Channel.Skills.Combat
 						if (damageSplash > 0)
 							splashTarget.TakeDamage(tSplashAction.Damage = damageSplash, attacker);
 
-						// Alert.  Probably doesn't matter, but make player normal target, instead of alert.
-						Network.Sending.Send.SetCombatTarget(splashTarget, attacker.EntityId, splashTarget.IsPlayer ? TargetMode.Normal : TargetMode.Alert);
+						// Alert
+						splashTarget.Aggro(attacker, true);
 
 						if (splashTarget.IsDead)
 							tSplashAction.Set(TargetOptions.FinishingHit | TargetOptions.Finished);
