@@ -1159,6 +1159,20 @@ namespace Aura.Channel.World.Inventory
 				// Switch item
 				var success = _pockets[source].Add(rightItem);
 
+				// Fallback, VIP inv
+				if (!success)
+					success = _pockets[Pocket.VIPInventory].Add(rightItem);
+
+				// Fallback, extra bags
+				for (var i = Pocket.ItemBags; i <= Pocket.ItemBagsMax; ++i)
+				{
+					if (success)
+						break;
+
+					if (_pockets.ContainsKey(i))
+						success = _pockets[i].Add(item);
+				}
+
 				// Fallback, temp inv
 				if (!success)
 					success = _pockets[Pocket.Temporary].Add(rightItem);
@@ -1237,6 +1251,20 @@ namespace Aura.Channel.World.Inventory
 			// Try inventory first.
 			// TODO: List of pockets stuff can be auto-moved to.
 			var success = _pockets[Pocket.Inventory].Add(leftItem);
+
+			// Fallback, VIP inv
+			if (!success)
+				success = _pockets[Pocket.VIPInventory].Add(leftItem);
+
+			// Fallback, extra bags
+			for (var i = Pocket.ItemBags; i <= Pocket.ItemBagsMax; ++i)
+			{
+				if (success)
+					break;
+
+				if (_pockets.ContainsKey(i))
+					success = _pockets[i].Add(item);
+			}
 
 			// Fallback, temp inv
 			if (!success)
