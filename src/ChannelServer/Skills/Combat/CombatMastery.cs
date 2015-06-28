@@ -152,7 +152,7 @@ namespace Aura.Channel.Skills.Combat
 			ICollection<Creature> targets = null;
 			if (rightWeapon != null && rightWeapon.Data.SplashRadius != 0 && rightWeapon.Data.SplashAngle != 0 || rightWeapon == null)
 			{
-				targets = attacker.GetTargetableCreaturesInCone(rightWeapon != null ? (int)rightWeapon.Data.SplashRadius : 200, rightWeapon != null ? (int)rightWeapon.Data.SplashAngle : 20);
+				targets = attacker.GetTargetableCreaturesInCone(rightWeapon != null ? (int)rightWeapon.Data.SplashRadius : 204, rightWeapon != null ? (int)rightWeapon.Data.SplashAngle : 60);
 
 				foreach (var splashTarget in targets)
 				{
@@ -381,7 +381,9 @@ namespace Aura.Channel.Skills.Combat
 							}
 
 							//Splash Damage Reduction
-							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0.2f;
+							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0f;
+							if (damageSplash <= 0f)
+								damageSplash = 1f;
 
 							// Critical Hit
 							if (critSkill != null && tAction.Has(TargetOptions.Critical))

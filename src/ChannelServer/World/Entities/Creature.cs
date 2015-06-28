@@ -1961,7 +1961,9 @@ namespace Aura.Channel.World.Entities
 					// Using 50% for now until we know more.
 
 					//Figured out a decent formula... Try it.
-					radius += (int)(Math.Max(this.RaceData.AttackRange * this.BodyScale / 2, target.RaceData.AttackRange * target.BodyScale / 2) / 2);
+					//Formula didn't work on big spiders.  Using a different one.
+					//This one works well:
+					radius += (int)(Math.Max(this.RaceData.AttackRange * this.BodyScale, target.RaceData.AttackRange * target.BodyScale) - (170/2)); //170/2 = Half of a player's base range.
 				}
 
 				return target != this // Exclude creature

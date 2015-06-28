@@ -109,12 +109,12 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="unkInt2"></param>
 		public void Use(Creature attacker, Skill skill, long targetAreaId = 0, int unkInt1 = 0, int unkInt2 = 0)
 		{
-			if ((attacker.Stun > 500 || DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime) && attacker.InterceptingSkillId == SkillId.None)
+			bool wasKnockedDown = (attacker.IsKnockedDown || attacker.WasKnockedBack);
+            if ((attacker.Stun > 500 && wasKnockedDown || attacker.IsStunned && !wasKnockedDown || DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime && (wasKnockedDown)) && attacker.InterceptingSkillId == SkillId.None)
 			{
 				Send.SkillUseSilentCancel(attacker);
 				return;
 			}
-			
 			var range = this.GetRange(attacker, skill);
 
 			var targets = attacker.GetTargetableCreaturesInRange(range, true);

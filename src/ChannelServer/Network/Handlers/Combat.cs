@@ -156,7 +156,7 @@ namespace Aura.Channel.Network.Handlers
 				&& skill.Info.Id != SkillId.Defense
 				&& skill.Info.Id != SkillId.Counterattack
 				&& skill.Info.Id != SkillId.Windmill
-				&& skill.Info.Id != SkillId.FinalHit) //These combat skills handle stun separately.
+				&& skill.Info.Id != SkillId.FinalHit) //These combat skills handle stun separately, if possible.
 			{ goto L_End; }
 
 			
