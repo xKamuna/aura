@@ -734,7 +734,7 @@ namespace Aura.Channel.Scripting.Scripts
 		{
 			_state = AiState.Aggro;
 			this.Clear();
-			if (alert && _useAlertOnSplashHit || !alert)
+			if (!alert || alert && _useAlertOnSplashHit)
 			{
 				this.Creature.IsInBattleStance = true;
 				this.Creature.Target = creature;
