@@ -117,6 +117,9 @@ namespace Aura.Channel.Skills.Combat
 
 			defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 
+			// TODO: Add renovation check once we're sure this works.
+			tAction.Creature.Unlock(Locks.Run, true);
+
 			Send.SkillUseStun(tAction.Creature, SkillId.Defense, DefenseTargetStun, 0);
 
 			return true;
