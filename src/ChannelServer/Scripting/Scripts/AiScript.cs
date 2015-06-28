@@ -753,6 +753,11 @@ namespace Aura.Channel.Scripting.Scripts
 			_useAlertOnSplashHit = alert;
 		}
 
+		public void UseBattleStanceFromAOE(bool use = true)
+		{
+			this.Creature.UseBattleStanceFromAOE = use;
+		}
+
 		// Actions
 		// ------------------------------------------------------------------
 

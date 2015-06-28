@@ -268,6 +268,7 @@ namespace Aura.Channel.World.Entities
 		public Creature LastKnockedBackBy { get; set; }
 
 
+
 		public bool WasKnockedBack { get; set; }
 
 		/// <summary>
@@ -349,6 +350,8 @@ namespace Aura.Channel.World.Entities
 		public bool IsNotReadyToBeHit { get { return (DateTime.Now < this.NotReadyToBeHitTime); } }
 
 		public bool IgnoreAttackRange { get; set; }
+
+		public bool UseBattleStanceFromAOE { get; set; }
 
 
 		// Stats
@@ -752,7 +755,9 @@ namespace Aura.Channel.World.Entities
 			this.AimMeter = new AimMeter(this);
 
 			this.Vars = new ScriptVariables();
-		}
+
+			this.UseBattleStanceFromAOE = false;
+        }
 
 		/// <summary>
 		/// Loads race and handles some basic stuff, like adding regens.

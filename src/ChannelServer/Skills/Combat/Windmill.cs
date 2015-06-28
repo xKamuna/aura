@@ -222,7 +222,8 @@ namespace Aura.Channel.Skills.Combat
 					survived.Add(target);
 				}
 
-				target.IsInBattleStance = true;
+				if(target.UseBattleStanceFromAOE)
+					target.IsInBattleStance = true;
 
 				// Stun & knock back
 				aAction.Stun = CombatMastery.GetAttackerStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);

@@ -11,6 +11,8 @@ public class GolemAi : AiScript
 	{
 		Hates("/pc/", "/pet/");
 		
+		UseBattleStanceFromAOE();
+		
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 

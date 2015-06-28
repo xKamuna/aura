@@ -105,6 +105,7 @@ namespace Aura.Channel.World.Entities
 		public PlayerCreature()
 		{
 			this.Watching = true;
+			this.UseBattleStanceFromAOE = true;
 		}
 
 		/// <summary>

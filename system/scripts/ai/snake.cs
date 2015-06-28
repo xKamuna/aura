@@ -12,6 +12,8 @@ public class SnakeAi : AiScript
 		Hates("/pc/", "/pet/");
 
 		UseAlertOnSplashHit();
+		
+		UseBattleStanceFromAOE();
 
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}

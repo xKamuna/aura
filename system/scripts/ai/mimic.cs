@@ -11,6 +11,7 @@ public class MimicAi : AiScript
 	{
 		//Doubts("/pc/");
 		UseAlertOnSplashHit();
+		UseBattleStanceFromAOE();
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 
