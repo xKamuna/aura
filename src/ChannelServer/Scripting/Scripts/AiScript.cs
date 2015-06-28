@@ -211,6 +211,11 @@ namespace Aura.Channel.Scripting.Scripts
 
 				this.SelectState();
 
+				if(this.Creature.IsKnockedDown || this.Creature.WasKnockedBack)
+				{
+					this.Creature.AttemptingAttack = true;
+				}
+
 				// Stop and clear if stunned
 				if (this.Creature.IsStunned || this.Creature.IsOnAttackDelay)
 				{
@@ -245,7 +250,7 @@ namespace Aura.Channel.Scripting.Scripts
 							case AiState.Aggro: this.SwitchAction(Aggro); break;
 							case AiState.Love: this.SwitchAction(Love); break;
 						}
-
+						this.Creature.AttemptingAttack = false;
 						_curAction.MoveNext();
 					}
 				}
