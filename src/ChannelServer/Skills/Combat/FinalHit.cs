@@ -181,7 +181,9 @@ namespace Aura.Channel.Skills.Combat
 			{
 				var pos = creature.GetPosition();
 				var targetPos = target.GetPosition();
-				var inRange = pos.InRange(targetPos, creature.AttackRangeFor(target));
+				var inRange = (pos.InRange(targetPos, creature.AttackRangeFor(target))
+				&& !creature.Region.Collisions.Any(pos, targetPos) // Check collisions between position
+				&& !target.Conditions.Has(ConditionsA.Invisible)); // Check visiblility (GM)
 
 				if (!inRange && !target.IsNotReadyToBeHit)
 				{

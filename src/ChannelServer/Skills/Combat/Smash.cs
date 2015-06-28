@@ -105,9 +105,14 @@ namespace Aura.Channel.Skills.Combat
 				return CombatSkillResult.Okay;
 
 			// Check range
-			var targetPosition = target.GetPosition();
-			if (!attacker.GetPosition().InRange(targetPosition, attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)
-				return CombatSkillResult.OutOfRange;
+			var attackerPosition = attacker.GetPosition();
+            var targetPosition = target.GetPosition();
+			if (!attacker.IgnoreAttackRange && 
+				(!attackerPosition.InRange(targetPosition, attacker.AttackRangeFor(target))
+				|| attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
+				|| target.Conditions.Has(ConditionsA.Invisible))) // Check visiblility (GM)
+			{ return CombatSkillResult.OutOfRange; }
+
 			attacker.IgnoreAttackRange = false;
 			// Against Normal Attack
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);

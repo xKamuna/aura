@@ -153,8 +153,10 @@ namespace Aura.Channel.Skills.Base
 			var targetPosition = target.GetPosition();
 			var attackerPosition = attacker.GetPosition();
 
-			if (!attackerPosition.InRange(targetPosition, this.GetRange(attacker, skill)))
-				return CombatSkillResult.OutOfRange;
+			if (!attackerPosition.InRange(targetPosition, this.GetRange(attacker, skill))
+				|| !attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
+				|| !target.Conditions.Has(ConditionsA.Invisible)) // Check visiblility (GM)
+			{ return CombatSkillResult.OutOfRange; }
 
 			// Use
 			this.UseSkillOnTarget(attacker, skill, target);

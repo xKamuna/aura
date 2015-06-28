@@ -49,8 +49,6 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public CombatSkillResult Use(Creature attacker, Skill skill, long targetEntityId)
 		{
-			
-
 			var target = attacker.Region.GetCreature(targetEntityId);
 			if (target == null)
 				return CombatSkillResult.Okay;
@@ -61,8 +59,13 @@ namespace Aura.Channel.Skills.Combat
 			if ((attacker.IsStunned || attacker.IsOnAttackDelay) && attacker.InterceptingSkillId == SkillId.None)
 				return CombatSkillResult.Okay;
 
-			if (!attacker.GetPosition().InRange(target.GetPosition(), attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)
-				return CombatSkillResult.OutOfRange;
+			var attackerPosition = attacker.GetPosition();
+			var targetPosition = target.GetPosition();
+			if (!attacker.IgnoreAttackRange &&
+				(!attackerPosition.InRange(targetPosition, attacker.AttackRangeFor(target))
+				|| attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
+				|| target.Conditions.Has(ConditionsA.Invisible))) // Check visiblility (GM)
+			{ return CombatSkillResult.OutOfRange; }
 
 			attacker.IgnoreAttackRange = false;
 
@@ -176,12 +179,6 @@ namespace Aura.Channel.Skills.Combat
 			{
 				var weapon = (i == 1 ? rightWeapon : leftWeapon);
 				var weaponIsKnuckle = (weapon != null && weapon.Data.HasTag("/knuckle/"));
-
-				
-
-				
-				
-				
 
 				AttackerAction aAction;
 				TargetAction tAction;
