@@ -427,7 +427,7 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if ((target == Pocket.Armor || target == Pocket.ArmorStyle) && !item.HasTag("/armor/"))
 					return false;
-				if ((target == Pocket.Glove || target == Pocket.GloveStyle) && !item.HasTag("/glove/"))
+				if ((target == Pocket.Glove || target == Pocket.GloveStyle) && !item.HasTag("/hand/"))
 					return false;
 				if ((target == Pocket.Head || target == Pocket.HeadStyle) && !item.HasTag("/head/"))
 					return false;
