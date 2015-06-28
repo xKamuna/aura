@@ -95,7 +95,7 @@ namespace Aura.Channel.Skills.Magic
 				// Set mana damage to target's mana and reduce the remaining
 				// damage from life if the mana is not enough.
 				manaDamage = target.Mana;
-				damage = Math.Min(1f, damage - manaDamage);
+				damage = Math.Max(1f, damage - manaDamage);
 			}
 
 			// Reduce mana
