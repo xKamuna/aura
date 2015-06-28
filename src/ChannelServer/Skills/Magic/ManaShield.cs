@@ -32,6 +32,10 @@ namespace Aura.Channel.Skills.Magic
 		/// <returns></returns>
 		public override StartStopResult Start(Creature creature, Skill skill, MabiDictionary dict)
 		{
+			if (creature.Skills.ActiveSkill != null && creature.Skills.ActiveSkill.State == SkillState.None || creature.IsStunned || creature.IsKnockedDown)
+			{
+				return StartStopResult.Okay;
+			}
 			creature.Conditions.Activate(ConditionsA.ManaShield);
 			Send.Effect(creature, Effect.ManaShield);
 
@@ -63,7 +67,7 @@ namespace Aura.Channel.Skills.Magic
 		/// <param name="target"></param>
 		/// <param name="damage"></param>
 		/// <param name="tAction"></param>
-		public static void Handle(Creature target, ref float damage, TargetAction tAction, float maxDamage, bool magic = false)
+		public static void Handle(Creature target, ref float damage, TargetAction tAction, float maxDamage, bool magic = false, bool killWhileDeadly = true)
 		{
 			// Mana Shield active?
 			if (!target.Conditions.Has(ConditionsA.ManaShield))
@@ -96,6 +100,10 @@ namespace Aura.Channel.Skills.Magic
 				// damage from life if the mana is not enough.
 				manaDamage = target.Mana;
 				damage = Math.Max(1f, damage - manaDamage);
+			}
+			if(damage <= 0 && target.Life <= 0 && killWhileDeadly)
+			{
+				damage = 1;
 			}
 
 			// Reduce mana
