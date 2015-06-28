@@ -145,7 +145,7 @@ namespace Aura.Channel.Skills.Combat
 			
 
 			attacker.StopMove();
-			var targetPosition = target.StopMove();
+			targetPosition = target.StopMove();
 
 
 			// Counter
