@@ -89,11 +89,6 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="packet"></param>
 		public void Use(Creature attacker, Skill skill, Packet packet)
 		{
-			if (attacker.IsOnAttackDelay)
-			{
-				Send.SkillUseSilentCancel(attacker);
-				return;
-			}
 			var targetAreaId = packet.GetLong();
 
 			// There exists a seemingly rare case where these parameters
@@ -114,7 +109,7 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="unkInt2"></param>
 		public void Use(Creature attacker, Skill skill, long targetAreaId = 0, int unkInt1 = 0, int unkInt2 = 0)
 		{
-			if ((attacker.IsStunned || attacker.IsOnAttackDelay) && attacker.InterceptingSkillId == SkillId.None)
+			if ((attacker.IsStunned && attacker.Stun > 500 || attacker.IsOnAttackDelay && DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime) && attacker.InterceptingSkillId == SkillId.None)
 			{
 				Send.SkillUseSilentCancel(attacker);
 				return;
