@@ -755,8 +755,6 @@ namespace Aura.Channel.World.Entities
 			this.AimMeter = new AimMeter(this);
 
 			this.Vars = new ScriptVariables();
-
-			this.UseBattleStanceFromAOE = false;
         }
 
 		/// <summary>
