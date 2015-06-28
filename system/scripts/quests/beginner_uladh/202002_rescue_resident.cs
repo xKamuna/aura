@@ -38,7 +38,8 @@ public class RescueResidentQuestScript : QuestScript
 		{
 			npc.FinishQuest(this.Id, "talk_trefor");
 			
-			npc.Player.Skills.Give(SkillId.Smash, SkillRank.Novice);
+			if(!npc.Player.Skills.Has(SkillId.Smash, SkillRank.Novice))
+				npc.Player.Skills.Give(SkillId.Smash, SkillRank.Novice);
 			
 			npc.Msg("Welcome, I am Trefor, the guard.<br/>Someone from the town went into Alby Dungeon a while ago, but hasn't returned yet.<br/>I wish I could go there myself, but I can't leave my post. I'd really appreciate it if you can go and look for in Alby Dungeon.");
 			npc.Msg("Since the dungeon is a dangerous place to be in, I'll teach you a skill that will help you in an emergency situation.<br/>It's called the Smash skill. If you use it, you can knock down a monster with a single blow!<br/>It is also highly effective when you sneak up on a target and deliver the blow without warning.");
