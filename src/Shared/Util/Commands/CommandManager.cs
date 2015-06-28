@@ -57,7 +57,7 @@ namespace Aura.Shared.Util.Commands
 					continue;
 				}
 
-				if (line[i] == '"')
+				if (i < line.Length && line[i] == '"')
 					quote = !quote;
 			}
 
