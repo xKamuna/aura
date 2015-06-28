@@ -62,6 +62,7 @@ namespace Aura.Channel.Scripting.Scripts
 		protected bool _hatesBattleStance;
 		protected int _maxDistanceFromSpawn;
 		protected bool _useAlertOnSplashHit;
+		protected bool _useBattleStanceFromAOE;
 
 		/// <summary>
 		/// Creature controlled by AI.
@@ -108,7 +109,6 @@ namespace Aura.Channel.Scripting.Scripts
 			_doubtTags = new Dictionary<string, string>();
 
 			_maxDistanceFromSpawn = 3000;
-			_useAlertOnSplashHit = false;
 
 			_aggroLimit = AggroLimit.One;
 		}
@@ -175,7 +175,8 @@ namespace Aura.Channel.Scripting.Scripts
 		public void Attach(Creature creature)
 		{
 			this.Creature = creature;
-			this.Creature.Death += OnDeath;
+			this.Creature.UseBattleStanceFromAOE = _useBattleStanceFromAOE;
+            this.Creature.Death += OnDeath;
 		}
 
 		/// <summary>
@@ -755,7 +756,9 @@ namespace Aura.Channel.Scripting.Scripts
 
 		public void UseBattleStanceFromAOE(bool use = true)
 		{
-			this.Creature.UseBattleStanceFromAOE = use;
+			_useBattleStanceFromAOE = use;
+			if(this.Creature != null)
+				this.Creature.UseBattleStanceFromAOE = use;
 		}
 
 		// Actions
