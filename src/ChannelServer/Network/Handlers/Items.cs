@@ -165,7 +165,7 @@ namespace Aura.Channel.Network.Handlers
 
 			if (!creature.Inventory.PickUp(item))
 			{
-				Send.SystemMessage(creature, Localization.Get("Not enough space."));
+				Send.Notice(creature, Localization.Get("Not enough space in your inventory."));
 				creature.Inventory.Remove(item.OptionInfo.LinkedPocketId);
 				Send.ItemPickUpR(creature, false);
 				return;
