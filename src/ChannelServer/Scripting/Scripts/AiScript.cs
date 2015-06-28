@@ -1239,6 +1239,8 @@ namespace Aura.Channel.Scripting.Scripts
 			{
 				this.SharpMind(this.Creature.Skills.ActiveSkill.Info.Id, SharpMindStatus.Cancelling);
 				this.Creature.Skills.CancelActiveSkill();
+				if(this.Creature.Skills.ActiveSkill.Info.Id == SkillId.FinalHit)
+					Send.Effect(this.Creature, Effect.FinalHit, (byte)0);
 			}
 
 			yield break;
