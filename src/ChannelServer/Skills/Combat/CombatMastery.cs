@@ -231,7 +231,8 @@ namespace Aura.Channel.Skills.Combat
                 }
 
 				// Critical Hit
-				var critChance = (i == 1 ? attacker.GetRightCritChance(target.Protection) : attacker.GetLeftCritChance(target.Protection));
+				var critShieldReduction = (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusCrit : 0);
+                var critChance = (i == 1 ? attacker.GetRightCritChance(target.Protection + critShieldReduction) : attacker.GetLeftCritChance(target.Protection + critShieldReduction));
 				CriticalHit.Handle(attacker, critChance, ref damage, tAction);
 
 				var maxDamage = damage; //Damage without Defense and Protection

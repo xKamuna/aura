@@ -133,9 +133,9 @@ namespace Aura.Channel.Skills.Combat
 				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));
 			}
 
-			
 
-			var critChance = attacker.GetTotalCritChance(target.Protection) + skill.RankData.Var3;
+			var critShieldReduction = (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusCrit : 0);
+			var critChance = attacker.GetTotalCritChance(target.Protection + critShieldReduction) + skill.RankData.Var3;
 
 			CriticalHit.Handle(attacker, critChance, ref damage, tAction, true);
 			var maxDamage = damage; //Damage without Defense and Protection

@@ -1851,7 +1851,7 @@ namespace Aura.Channel.World.Entities
 			baseCritical += ((this.Will - 10) / 10f);
 			baseCritical += ((this.Luck - 10) / 5f);
 
-			return Math.Max(0, baseCritical - protection - (this.LeftHand != null ? this.LeftHand.Data.DefenseBonusCrit : 0));
+			return Math.Max(0, baseCritical - protection);
 		}
 
 		/// <summary>

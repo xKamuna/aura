@@ -376,7 +376,8 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		protected float GetCritChance(Creature attacker, Creature target, Skill skill)
 		{
-			var result = attacker.GetTotalCritChance(target.Protection);
+			var critShieldReduction = (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusCrit : 0);
+			var result = attacker.GetTotalCritChance(target.Protection + critShieldReduction);
 
 			// +5% crit for 2H
 			if (attacker.RightHand != null && attacker.RightHand.Data.Type == ItemType.Weapon2H)
