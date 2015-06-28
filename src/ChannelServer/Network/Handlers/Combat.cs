@@ -149,8 +149,14 @@ namespace Aura.Channel.Network.Handlers
 				goto L_End;
 
 			// Check Stun
-			if (creature.IsStunned || creature.IsOnAttackDelay)
-				goto L_End;
+			if ((creature.IsStunned || creature.IsOnAttackDelay)
+				&& skill.Info.Id != SkillId.CombatMastery
+				&& skill.Info.Id != SkillId.Smash
+				& skill.Info.Id != SkillId.Defense
+				&& skill.Info.Id != SkillId.Counterattack
+				&& skill.Info.Id != SkillId.Windmill
+				&& skill.Info.Id != SkillId.FinalHit) //These combat skills handle stun separately.
+			{ goto L_End; }
 
 			
 
