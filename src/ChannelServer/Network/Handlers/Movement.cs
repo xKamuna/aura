@@ -41,6 +41,13 @@ namespace Aura.Channel.Network.Handlers
 			var to = new Position(x, y);
 			var walk = (packet.Op == Op.Walk);
 
+			// Reset position if creature is stunned.
+			if (creature.IsStunned)
+			{
+				creature.Jump(from);
+				return;
+			}
+
 			// Reset position if creature can't walk.
 			if (walk && !creature.Can(Locks.Walk))
 			{
