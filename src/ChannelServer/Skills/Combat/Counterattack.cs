@@ -99,10 +99,6 @@ namespace Aura.Channel.Skills.Combat
 				return false;
 			}
 
-			// TODO: Add renovation check once we're sure this works.
-			target.Unlock(Locks.Run, true);
-			target.Unlock(Locks.Move, true);
-
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<Counterattack>(SkillId.Counterattack);
 			handler.Use(target, attacker);
 
@@ -125,6 +121,10 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="target"></param>
 		public void Use(Creature attacker, Creature target)
 		{
+			// TODO: Add renovation check once we're sure this works.
+			target.Unlock(Locks.Run, true);
+			target.Unlock(Locks.Move, true);
+
 			var skill = attacker.Skills.Get(SkillId.Counterattack);
 
 			var aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.Counterattack, target.EntityId);
