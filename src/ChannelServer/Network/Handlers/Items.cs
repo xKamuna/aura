@@ -100,12 +100,11 @@ namespace Aura.Channel.Network.Handlers
 
 			// Check item
 			var item = creature.Inventory.GetItem(entityId);
-			if (item == null)
+			if (item == null || item.HasTag("/not_dropable/"))
 			{
 				Send.ItemDropR(creature, false);
 				return;
 			}
-
 			// Check for filled bags
 			if (item.IsBag && item.OptionInfo.LinkedPocketId != Pocket.None && creature.Inventory.CountItemsInPocket(item.OptionInfo.LinkedPocketId) > 0)
 			{
@@ -193,7 +192,7 @@ namespace Aura.Channel.Network.Handlers
 
 			// Check and try to remove item
 			var item = creature.Inventory.GetItem(itemId);
-			if (item == null || !creature.Inventory.Remove(item))
+			if (item == null || !item.HasTag("/destroyable/") || !creature.Inventory.Remove(item))
 			{
 				Send.ItemDestroyR(creature, false);
 				return;
