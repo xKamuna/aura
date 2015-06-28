@@ -170,6 +170,11 @@ namespace Aura.Channel.Skills.Combat
 			var targetEntityId = packet.GetLong();
 			var unk1 = packet.GetInt();
 			var unk2 = packet.GetInt();
+			Use(creature, skill, targetEntityId, unk1, unk2);
+
+		}
+		public void Use(Creature creature, Skill skill, long targetEntityId, int unk1, int unk2)
+		{
 
 			if (_cm == null)
 				_cm = ChannelServer.Instance.SkillManager.GetHandler<CombatMastery>(SkillId.CombatMastery);

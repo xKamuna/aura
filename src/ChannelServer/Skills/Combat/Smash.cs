@@ -135,8 +135,7 @@ namespace Aura.Channel.Skills.Combat
 			// Against Windmill
 			//TODO: Change this into the new NPC client system when it comes out.
 			Skill windmill = target.Skills.Get(SkillId.Windmill);
-			PlayerCreature player = attacker as PlayerCreature;
-			if (windmill != null && target.Skills.IsReady(SkillId.Windmill) && player == null)
+			if (windmill != null && target.Skills.IsReady(SkillId.Windmill) && !target.IsPlayer)
 			{
 				target.InterceptingSkillId = SkillId.Smash;
 				var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<IUseable>(windmill.Info.Id) as Windmill;

@@ -161,10 +161,10 @@ namespace Aura.Channel.Skills.Combat
 				target.StopMove();
 
 				Skill smash = target.Skills.Get(SkillId.Smash);
-				if (smash != null && target.Skills.IsReady(SkillId.Smash))
+				if (smash != null && target.Skills.IsReady(SkillId.Smash) && !attacker.IsPlayer)
 					attacker.InterceptingSkillId = SkillId.Smash;
 				TargetAction tAction;
-				if (attacker.InterceptingSkillId == SkillId.Smash && !target.GetPosition().InRange(attacker.GetPosition(), target.AttackRangeFor(attacker)))
+				if (attacker.InterceptingSkillId == SkillId.Smash && target.GetPosition().InRange(attacker.GetPosition(), target.AttackRangeFor(attacker)))
 				{
 					aAction.Options |= AttackerOptions.Result;
 					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);

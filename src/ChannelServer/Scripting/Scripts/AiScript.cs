@@ -1038,10 +1038,15 @@ namespace Aura.Channel.Scripting.Scripts
 
 			// Get skill handler
 			var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(skill.Info.Id);
+			FinalHit skillHandler2 = null;
 			if (skillHandler == null)
 			{
-				Log.Error("AI.Attack: Skill handler not found for '{0}'.", skill.Info.Id);
-				yield break;
+				skillHandler2 = ChannelServer.Instance.SkillManager.GetHandler<FinalHit>(skill.Info.Id);
+				if (skillHandler2 == null)
+				{
+					Log.Error("AI.Attack: Skill handler not found for '{0}'.", skill.Info.Id);
+					yield break;
+				}
 			}
 
 			var attackRange = this.Creature.AttackRangeFor(this.Creature.Target);
@@ -1058,9 +1063,9 @@ namespace Aura.Channel.Scripting.Scripts
 				{
 					this.Creature.AttemptingAttack = true;
 				}
-				var result = skillHandler.Use(this.Creature, skill, this.Creature.Target.EntityId);
-				if (result == CombatSkillResult.Okay)
+				if (skillHandler2 != null)
 				{
+					skillHandler2.Use(this.Creature, skill, this.Creature.Target.EntityId, 0 , 0);
 					// Stop when max attack count is reached
 					this.Creature.AttemptingAttack = false;
 					if (++i >= count)
@@ -1068,47 +1073,68 @@ namespace Aura.Channel.Scripting.Scripts
 
 					yield return true;
 				}
-				else if (result == CombatSkillResult.OutOfRange)
-				{
-					// Run to target if out of range
-					var pos = this.Creature.GetPosition();
-					var targetPos = this.Creature.Target.GetPosition();
-
-					//this.ExecuteOnce(this.RunTo(pos.GetRelative(targetPos, -attackRange + 50)));
-					this.ExecuteOnce(this.RunTo(targetPos));
-
-					yield return true;
-				}
 				else
 				{
-					Log.Error("AI.Attack: Unhandled combat skill result ({0}).", result);
-					yield break;
+					var result = skillHandler.Use(this.Creature, skill, this.Creature.Target.EntityId);
+					if (result == CombatSkillResult.Okay)
+					{
+						// Stop when max attack count is reached
+						this.Creature.AttemptingAttack = false;
+						if (++i >= count)
+							break;
+
+						yield return true;
+					}
+					else if (result == CombatSkillResult.OutOfRange)
+					{
+						// Run to target if out of range
+						var pos = this.Creature.GetPosition();
+						var targetPos = this.Creature.Target.GetPosition();
+
+						//this.ExecuteOnce(this.RunTo(pos.GetRelative(targetPos, -attackRange + 50)));
+						this.ExecuteOnce(this.RunTo(targetPos));
+
+						yield return true;
+					}
+					else
+					{
+						Log.Error("AI.Attack: Unhandled combat skill result ({0}).", result);
+						yield break;
+					}
 				}
 			}
 
 			// Handle completing of skill, if it hasn't been canceled
 			if (skill.Info.Id != SkillId.CombatMastery && this.Creature.Skills.ActiveSkill != null)
 			{
-				// Get handler
-				var completeHandler = skillHandler as ICompletable;
-				if (completeHandler == null)
+				if(skillHandler2 != null)
 				{
-					Log.Error("AI.Attack: Missing complete handler for {0}.", skill.Info.Id);
+					Send.Effect(this.Creature, Effect.FinalHit, (byte)0);
 				}
 				else
-				{
-					// Try completing
-					try
+				{ 
+				// Get handler
+				var completeHandler = skillHandler as ICompletable;
+					if (completeHandler == null)
 					{
-						completeHandler.Complete(this.Creature, skill, null);
+						if (skill.Info.Id != SkillId.FinalHit)
+							Log.Error("AI.Attack: Missing complete handler for {0}.", skill.Info.Id);
 					}
-					catch (NullReferenceException)
+					else
 					{
-						Log.Warning("AI.Attack: Null ref exception while completing '{0}', skill might have parameters.", skill.Info.Id);
-					}
-					catch (NotImplementedException)
-					{
-						Log.Unimplemented("AI.Attack: Skill complete method for '{0}'.", skill.Info.Id);
+						// Try completing
+						try
+						{
+							completeHandler.Complete(this.Creature, skill, null);
+						}
+						catch (NullReferenceException)
+						{
+							Log.Warning("AI.Attack: Null ref exception while completing '{0}', skill might have parameters.", skill.Info.Id);
+						}
+						catch (NotImplementedException)
+						{
+							Log.Unimplemented("AI.Attack: Skill complete method for '{0}'.", skill.Info.Id);
+						}
 					}
 				}
 
