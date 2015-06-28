@@ -114,7 +114,7 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="unkInt2"></param>
 		public void Use(Creature attacker, Skill skill, long targetAreaId = 0, int unkInt1 = 0, int unkInt2 = 0)
 		{
-			if(attacker.IsOnAttackDelay)
+			if ((attacker.IsStunned || attacker.IsOnAttackDelay) && attacker.InterceptingSkillId == SkillId.None)
 			{
 				Send.SkillUseSilentCancel(attacker);
 				return;
@@ -148,7 +148,7 @@ namespace Aura.Channel.Skills.Combat
 			foreach (var target in targets)
 			{
 				i++;
-				if ((DateTime.Now.AddMilliseconds(1500) < target.NotReadyToBeHitTime)) //Able to be attacked at half of knock down time.
+				if ((DateTime.Now.AddMilliseconds(2000) < target.NotReadyToBeHitTime)) //Able to be attacked at 1/3 of knock down time.
 				{
 					skipped.Add(target);
 					if (skipped.Count == targets.Count)

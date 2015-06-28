@@ -58,7 +58,7 @@ namespace Aura.Channel.Skills.Combat
 			if (target.IsNotReadyToBeHit)
 				return CombatSkillResult.Okay;
 
-			if ((attacker.IsStunned || attacker.IsOnAttackDelay))
+			if ((attacker.IsStunned || attacker.IsOnAttackDelay) && attacker.InterceptingSkillId == SkillId.None)
 				return CombatSkillResult.Okay;
 
 			if (!attacker.GetPosition().InRange(target.GetPosition(), attacker.AttackRangeFor(target)) && !attacker.IgnoreAttackRange)

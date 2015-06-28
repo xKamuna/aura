@@ -192,7 +192,7 @@ namespace Aura.Channel.Skills
 					if (tAction.Has(TargetOptions.KnockDown) || tAction.Has(TargetOptions.Smash))
 					{
 						tAction.Creature.KnockDownTime = DateTime.Now.AddMilliseconds(tAction.Stun);
-						tAction.Creature.NotReadyToBeHitTime = DateTime.Now.AddMilliseconds(tAction.Stun*1.05); //1.05 is just a guesstimate, actual official time unknown.
+						tAction.Creature.NotReadyToBeHitTime = DateTime.Now.AddMilliseconds(tAction.Stun*0.55); //0.55 is just a guesstimate, actual official time unknown.
 					}
 
 					if(tAction.Creature.WasKnockedBack)
