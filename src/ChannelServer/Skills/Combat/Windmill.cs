@@ -144,8 +144,10 @@ namespace Aura.Channel.Skills.Combat
 
 			var skipped = new List<Creature>();
 
+			var i = 0;
 			foreach (var target in targets)
 			{
+				i++;
 				if ((DateTime.Now.AddMilliseconds(1500) < target.NotReadyToBeHitTime)) //Able to be attacked at half of knock down time.
 				{
 					skipped.Add(target);
@@ -196,7 +198,24 @@ namespace Aura.Channel.Skills.Combat
 				damage *= skill.RankData.Var1 / 100f;
 
 				// Handle skills and reductions
-				CriticalHit.Handle(attacker, attacker.GetTotalCritChance(0), ref damage, tAction);
+				var allCrit = false;
+				var critSkill = target.Skills.Get(SkillId.CriticalHit);
+				if (allCrit)
+				{
+					// Add crit bonus
+					var bonus = critSkill.RankData.Var1 / 100f;
+					damage = damage + (damage * bonus);
+
+					// Set target option
+					tAction.Set(TargetOptions.Critical);
+				}
+				else if(i == 1)
+				{
+					
+					CriticalHit.Handle(attacker, attacker.GetTotalCritChance(0), ref damage, tAction);
+					if (tAction.Has(TargetOptions.Critical))
+						allCrit = true;
+				}
 				var maxDamage = damage; //Damage without Defense and Protection
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 				Defense.Handle(aAction, tAction, ref damage);
