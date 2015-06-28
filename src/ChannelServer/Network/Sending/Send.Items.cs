@@ -142,6 +142,19 @@ namespace Aura.Channel.Network.Sending
 		}
 
 		/// <summary>
+		/// Sends ItemPickUpR to creature's client.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <param name="success"></param>
+		public static void ItemPickUpR(Creature creature, byte successByte)
+		{
+			var packet = new Packet(Op.ItemPickUpR, creature.EntityId);
+			packet.PutByte(successByte);
+
+			creature.Client.Send(packet);
+		}
+
+		/// <summary>
 		/// Sends ItemSplitR to creature's client.
 		/// </summary>
 		/// <param name="creature"></param>
