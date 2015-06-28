@@ -90,7 +90,7 @@ namespace Aura.Channel.Skills.Combat
 			var simultaneousAttackStun = 0;
 			if(attacker.InterceptingSkillId != SkillId.CombatMastery && target.InterceptingSkillId != SkillId.CombatMastery)
 			{
-				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack)
 				{
 					var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 					var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);

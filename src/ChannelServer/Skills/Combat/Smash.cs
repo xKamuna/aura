@@ -111,7 +111,7 @@ namespace Aura.Channel.Skills.Combat
 			attacker.IgnoreAttackRange = false;
 			// Against Normal Attack
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
-			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && !target.IsStunned)
+			if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack)
 			{
 				target.InterceptingSkillId = SkillId.Smash;
 				target.IgnoreAttackRange = true;
