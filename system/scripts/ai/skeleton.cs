@@ -64,7 +64,6 @@ public class SkeletonAi : AiScript
 
 	private IEnumerable OnKnockDown()
 	{
-
 		var num = Random(100);
 		if (num < 40) // 40%
 		{

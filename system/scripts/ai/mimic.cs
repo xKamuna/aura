@@ -10,7 +10,7 @@ public class MimicAi : AiScript
 	public MimicAi()
 	{
 		//Doubts("/pc/");
-		
+		UseAlertOnSplashHit();
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 
@@ -32,6 +32,11 @@ public class MimicAi : AiScript
 			Do(Circle(500, 3000, 5000, true, false));
 		
 		Do(CancelSkill());
+	}
+	
+	protected override IEnumerable Alert()
+	{
+		yield break;
 	}
 	
 	private IEnumerable OnDefenseHit()

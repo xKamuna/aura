@@ -12,7 +12,9 @@ public class LaghodessaAi : AiScript
 	public LaghodessaAi()
 	{
 		Hates("/pc/", "/pet/");
-
+	
+		UseAlertOnSplashHit();
+	
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 

@@ -11,6 +11,8 @@ public class SnakeAi : AiScript
 	{
 		Hates("/pc/", "/pet/");
 
+		UseAlertOnSplashHit();
+
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 

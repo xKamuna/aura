@@ -68,7 +68,23 @@ public class RatManAi : AiScript
 
 	private IEnumerable OnKnockDown()
 	{
-		Do(Attack(3));
-		Do(Wait(3000));
+		var num = Random(100);
+		if (num < 40) // 40%
+		{
+			Do(Attack(3));
+			Do(Wait(3000));
+		}
+		else if (num < 80) // 40%
+		{
+			Do(PrepareSkill(SkillId.Defense));
+			Do(Circle(300, 1000, 1000));
+			Do(CancelSkill());
+		}
+		else // 20%
+		{
+			Do(PrepareSkill(SkillId.Counterattack));
+			Do(Wait(4000));
+			Do(CancelSkill());
+		}
 	}
 }

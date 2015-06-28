@@ -61,6 +61,7 @@ namespace Aura.Channel.Scripting.Scripts
 		protected Dictionary<string, string> _hateTags, _loveTags, _doubtTags;
 		protected bool _hatesBattleStance;
 		protected int _maxDistanceFromSpawn;
+		protected bool _useAlertOnSplashHit;
 
 		/// <summary>
 		/// Creature controlled by AI.
@@ -107,6 +108,7 @@ namespace Aura.Channel.Scripting.Scripts
 			_doubtTags = new Dictionary<string, string>();
 
 			_maxDistanceFromSpawn = 3000;
+			_useAlertOnSplashHit = false;
 
 			_aggroLimit = AggroLimit.One;
 		}
@@ -732,9 +734,17 @@ namespace Aura.Channel.Scripting.Scripts
 		{
 			_state = AiState.Aggro;
 			this.Clear();
-			this.Creature.IsInBattleStance = true;
-			this.Creature.Target = creature;
-			Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
+			if (alert && _useAlertOnSplashHit)
+			{
+				this.Creature.IsInBattleStance = true;
+				this.Creature.Target = creature;
+				Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
+			}
+		}
+
+		public void UseAlertOnSplashHit(bool alert = true)
+		{
+			_useAlertOnSplashHit = alert;
 		}
 
 		// Actions

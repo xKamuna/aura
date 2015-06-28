@@ -10,6 +10,8 @@ public class SpiderAi : AiScript
 	public SpiderAi()
 	{
 		Hates("/pc/", "/pet/");
+
+		UseAlertOnSplashHit();
 		
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
