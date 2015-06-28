@@ -421,7 +421,7 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) && !item.HasTag("/lefthand/") && !item.HasTag("/twin_sword/") && !item.HasTag("/blunt/")) //Check for Giant for blunts below.
 					return false;
-				if ((target == Pocket.RightHand1 || target == Pocket.RightHand2) && !item.HasTag("/righthand/"))
+				if ((target == Pocket.RightHand1 || target == Pocket.RightHand2) && !item.HasTag("/righthand/") && !item.HasTag("/twohand/"))
 					return false;
 				if ((target == Pocket.Accessory1 || target == Pocket.Accessory2) && !item.HasTag("/accessary/"))
 					return false;
