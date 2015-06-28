@@ -146,7 +146,7 @@ namespace Aura.Channel.Skills.Combat
 
 			foreach (var target in targets)
 			{
-				if (target.IsNotReadyToBeHit)
+				if ((DateTime.Now.AddMilliseconds(1500) < target.NotReadyToBeHitTime)) //Able to be attacked at half of knock down time.
 				{
 					skipped.Add(target);
 					if (skipped.Count == targets.Count)
