@@ -416,7 +416,7 @@ namespace Aura.Channel.World.Entities
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
 		/// <param name="creature"></param>
-		public override void Aggro(Creature target)
+		public override void Aggro(Creature target, bool alert = false)
 		{
 			if (this.AI == null)
 				return;
@@ -425,7 +425,7 @@ namespace Aura.Channel.World.Entities
 			// or if there is a target but it's not a player, and the attacker is one,
 			// or if the current target is not aggroed yet.
 			if (this.Target == null || (this.Target != null && target != null && !this.Target.IsPlayer && target.IsPlayer) || this.AI.State != AiScript.AiState.Aggro)
-				this.AI.AggroCreature(target);
+				this.AI.AggroCreature(target, alert);
 		}
 
 		/// <summary>

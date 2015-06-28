@@ -728,13 +728,13 @@ namespace Aura.Channel.Scripting.Scripts
 		/// Sets target and puts creature in battle mode.
 		/// </summary>
 		/// <param name="creature"></param>
-		public void AggroCreature(Creature creature)
+		public void AggroCreature(Creature creature, bool alert = false)
 		{
 			_state = AiState.Aggro;
 			this.Clear();
 			this.Creature.IsInBattleStance = true;
 			this.Creature.Target = creature;
-			Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, TargetMode.Aggro);
+			Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
 		}
 
 		// Actions
