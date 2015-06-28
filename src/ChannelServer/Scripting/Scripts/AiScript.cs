@@ -740,6 +740,12 @@ namespace Aura.Channel.Scripting.Scripts
 				this.Creature.Target = creature;
 				Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
 			}
+			else if(this.Creature.IsInBattleStance)
+			{
+				this.Creature.IsInBattleStance = false;
+				this.Creature.Target = null;
+				Send.SetCombatTarget(this.Creature, 0, TargetMode.Normal);
+			}
 		}
 
 		public void UseAlertOnSplashHit(bool alert = true)
