@@ -6,6 +6,7 @@ using Aura.Channel.Skills.Base;
 using Aura.Channel.Skills.Magic;
 using Aura.Channel.World;
 using Aura.Channel.World.Entities;
+using Aura.Data;
 using Aura.Mabi.Const;
 using Aura.Mabi.Network;
 using Aura.Shared.Network;
@@ -58,6 +59,10 @@ namespace Aura.Channel.Skills.Combat
 		public override bool Ready(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillReady(creature, skill.Info.Id);
+
+			// Disable movement if renovation isn't enabled.
+			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
+				creature.Lock(Locks.Move, true);
 
 			// Training
 			if (skill.Info.Rank == SkillRank.RF)
@@ -135,7 +140,7 @@ namespace Aura.Channel.Skills.Combat
 
 
 			var critShieldReduction = (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusCrit : 0);
-			var critChance = attacker.GetTotalCritChance(target.Protection) + skill.RankData.Var3;
+			var critChance = attacker.GetTotalCritChance(target.Protection + critShieldReduction) + skill.RankData.Var3;
 
 			CriticalHit.Handle(attacker, critChance, ref damage, tAction, true);
 			var maxDamage = damage; //Damage without Defense and Protection
