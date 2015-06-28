@@ -109,7 +109,7 @@ namespace Aura.Channel.Skills.Combat
 		/// <param name="unkInt2"></param>
 		public void Use(Creature attacker, Skill skill, long targetAreaId = 0, int unkInt1 = 0, int unkInt2 = 0)
 		{
-			if ((attacker.IsStunned && attacker.Stun > 500 || attacker.IsOnAttackDelay && DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime) && attacker.InterceptingSkillId == SkillId.None)
+			if ((attacker.Stun > 500 || DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime) && attacker.InterceptingSkillId == SkillId.None)
 			{
 				Send.SkillUseSilentCancel(attacker);
 				return;
