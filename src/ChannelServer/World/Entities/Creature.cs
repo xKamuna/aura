@@ -2011,6 +2011,7 @@ namespace Aura.Channel.World.Entities
 
 				return target != this // Exclude creature
 					&& this.CanTarget(target) // Check targetability
+					&& ((!this.Has(CreatureStates.Npc) || !target.Has(CreatureStates.Npc)) || this.Target == target) // Allow NPC on NPC only if it's the creature's target
 					&& targetPos.InRange(position, radius) // Check range
 					&& Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(position.X, position.Y), 
 						Mabi.MabiMath.ByteToDirection(this.Direction), new Mabi.MabiMath.Vector2(targetPos.X, targetPos.Y), 
