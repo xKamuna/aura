@@ -29,6 +29,7 @@ namespace Aura.Channel.Skills.Combat
 		/// Time in milliseconds that attacker and creature are stunned for
 		/// after use.
 		/// </summary>
+		private const short AttackStunTime = 2000;
 		private const short StunTime = 3000;
 
 		/// <summary>
@@ -179,7 +180,7 @@ namespace Aura.Channel.Skills.Combat
 			if (target.IsDead)
 				tAction.Options |= TargetOptions.FinishingKnockDown;
 
-			aAction.Stun = StunTime;
+			aAction.Stun = AttackStunTime;
 			tAction.Stun = StunTime;
 
 			if (!target.IsDead)
@@ -199,7 +200,7 @@ namespace Aura.Channel.Skills.Combat
 
 			skill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 
-			Send.SkillUseStun(attacker, skill.Info.Id, StunTime, 1);
+			Send.SkillUseStun(attacker, skill.Info.Id, AttackStunTime, 1);
 
 			this.Training(aAction, tAction);
 
