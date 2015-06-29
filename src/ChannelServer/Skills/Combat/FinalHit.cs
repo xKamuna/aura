@@ -117,7 +117,7 @@ namespace Aura.Channel.Skills.Combat
 				(sender, e) =>
 				{
 					durationTimer.Enabled = false;
-					if (creature.Skills.IsActive(SkillId.FinalHit))
+					if (creature.Skills.IsReady(SkillId.FinalHit))
 					{
 						if (creature != null && (creature.Client == null || !(creature.Client.Account != null && creature.Client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))))
 						{

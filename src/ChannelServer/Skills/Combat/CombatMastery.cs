@@ -197,14 +197,14 @@ namespace Aura.Channel.Skills.Combat
 				{
 					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
 					aAction.Options |= AttackerOptions.Result;
-					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, target.Skills.IsActive(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
+					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, target.Skills.IsReady(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
 					tAction.Options |= TargetOptions.Result;
 
 				}
 				else
 				{
 					aAction = new AttackerAction(CombatActionType.Hit, attacker, skill.Info.Id, targetEntityId);
-					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, target.Skills.IsActive(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
+					tAction = new TargetAction(CombatActionType.TakeHit, target, attacker, target.Skills.IsReady(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
 					aAction.Options |= AttackerOptions.Result;
 					tAction.Options |= TargetOptions.Result;
 				}
@@ -267,7 +267,7 @@ namespace Aura.Channel.Skills.Combat
 				{
 					if (tAction.Type != CombatActionType.Defended)
 					{
-						if (!target.Skills.IsActive(SkillId.FinalHit))
+						if (!target.Skills.IsReady(SkillId.FinalHit))
 						{
 							target.Stability -= this.GetStabilityReduction(attacker, weapon) / maxHits;
 
@@ -300,7 +300,7 @@ namespace Aura.Channel.Skills.Combat
 				// React to knock back
 				if (tAction.IsKnockBack && tAction.Type != CombatActionType.Defended)
 				{
-					if (!target.Skills.IsActive(SkillId.FinalHit))
+					if (!target.Skills.IsReady(SkillId.FinalHit))
 					{
 						attacker.Shove(target, KnockBackDistance);
 					}
@@ -334,7 +334,7 @@ namespace Aura.Channel.Skills.Combat
 					{
 						aAction.Stun = (short)simultaneousAttackStun;
 					}
-					if (!target.Skills.IsActive(SkillId.FinalHit))
+					if (!target.Skills.IsReady(SkillId.FinalHit))
 					{
 						tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
 					}
@@ -420,7 +420,7 @@ namespace Aura.Channel.Skills.Combat
 							{
 								if (tSplashAction.Type != CombatActionType.Defended)
 								{
-									if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+									if (!splashTarget.Skills.IsReady(SkillId.FinalHit))
 									{
 
 										splashTarget.Stability -= (this.GetStabilityReduction(attacker, weapon) / maxHits) / 2;  //Less stability reduction for splash damage.
@@ -455,7 +455,7 @@ namespace Aura.Channel.Skills.Combat
 							if (tSplashAction.IsKnockBack && tSplashAction.Type != CombatActionType.Defended)
 							{
 
-								if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+								if (!splashTarget.Skills.IsReady(SkillId.FinalHit))
 								{
 									attacker.Shove(splashTarget, KnockBackDistance);
 								}
@@ -465,7 +465,7 @@ namespace Aura.Channel.Skills.Combat
 							// Set stun time
 							if (tSplashAction.Type != CombatActionType.Defended)
 							{
-								if (!splashTarget.Skills.IsActive(SkillId.FinalHit))
+								if (!splashTarget.Skills.IsReady(SkillId.FinalHit))
 								{
 									if (defenseStun != 0)
 										tSplashAction.Stun = (short)defenseStun;
