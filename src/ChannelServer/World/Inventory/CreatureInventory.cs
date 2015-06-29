@@ -1146,12 +1146,12 @@ namespace Aura.Channel.World.Inventory
 			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand) ||
 					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
-							rightItem != null && !rightItem.HasTag("/inverse_transmutator/") && item.HasTag("/inverse_transmutator/")
+							rightItem != null
 						)
 					) ||
 					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
-							rightItem != null && rightItem.HasTag("/inverse_transmutator/") && !item.HasTag("/inverse_transmutator/")
+							rightItem != null
 						)
 					)
 				)
@@ -1240,11 +1240,8 @@ namespace Aura.Channel.World.Inventory
 			}
 
 			if (!item.IsTwoHand
-				&& !(leftPocket == Pocket.Magazine1 || leftPocket == Pocket.Magazine2)
-				&& !((item.HasTag("/twin_sword/") || item.HasTag("/blunt/")) && !leftItem.IsShieldLike)
-				&& !(item.HasTag("/inverse_transmutator/") && !leftItem.HasTag("/inverse_transmutator/"))
-				&& !(!item.HasTag("/inverse_transmutator/") && leftItem.HasTag("/inverse_transmutator/"))
-				) //Only unequip left hand if item is two handed, is a magazine, or the left hand has a guard cylinder and the item is not a cylinder.
+				&& !(!leftItem.IsShieldLike)
+				) //Only unequip left hand if item is two handed, or the left hand item is not a shield/shield-like while trying to equip anything.
             { return; }
 
 			// Try inventory first.
