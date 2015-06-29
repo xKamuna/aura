@@ -342,14 +342,17 @@ namespace Aura.Channel.World.Entities.Creatures
 			}
 
 		L_Cancel:
-			this.ActiveSkill.Stacks = 0;
+			if (this.ActiveSkill != null) //Second check, because for some reason this was still being called.
+			{
+				this.ActiveSkill.Stacks = 0;
 
-			Send.SkillCancel(_creature);
+				Send.SkillCancel(_creature);
 
-			this.ActiveSkill.State = SkillState.Canceled;
-			this.ActiveSkill = null;
+				this.ActiveSkill.State = SkillState.Canceled;
+				this.ActiveSkill = null;
 
-			_creature.Unlock(Locks.Move);
+				_creature.Unlock(Locks.Move);
+			}
 		}
 
 		/// <summary>

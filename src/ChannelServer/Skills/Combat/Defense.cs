@@ -93,27 +93,23 @@ namespace Aura.Channel.Skills.Combat
 			if (!tAction.Creature.Skills.IsReady(SkillId.Defense))
 				return false;
 
+			// Reduce damage
+			var defenseSkill = tAction.Creature.Skills.Get(SkillId.Defense);
+			if (defenseSkill == null)
+				return false;
+			if (defenseSkill.IsOnCooldown)
+				return false;
+			defenseSkill.State = SkillState.Used;
+
 			// Update actions
 			tAction.Type = CombatActionType.Defended;
 			tAction.SkillId = SkillId.Defense;
 			tAction.Stun = DefenseTargetStun;
 			aAction.Stun = DefenseAttackerStun;
-
-			// Reduce damage
-			var defenseSkill = tAction.Creature.Skills.Get(SkillId.Defense);
-			if (defenseSkill != null)
-			{
-				if (defenseSkill.IsOnCooldown)
-					return false;
-				var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
-				if (damage > shieldPassiveDefense)
-					damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
-				damage = Math.Max(1, damage - defenseSkill.RankData.Var3 - shieldPassiveDefense);
-			}
-			else
-			{
-				return false;
-			}
+			var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
+			if (damage > shieldPassiveDefense)
+				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
+			damage = Math.Max(1, damage - defenseSkill.RankData.Var3 - shieldPassiveDefense);
 
 			defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 

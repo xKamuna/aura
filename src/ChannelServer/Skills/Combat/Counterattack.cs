@@ -102,17 +102,12 @@ namespace Aura.Channel.Skills.Combat
 		{
 			if (!target.Skills.IsReady(SkillId.Counterattack))
 				return false;
-
 			var counterSkill = target.Skills.Get(SkillId.Counterattack);
-			if (counterSkill != null)
-			{
-				if (counterSkill.IsOnCooldown)
-					return false;
-			}
-			else
-			{
+			if (counterSkill == null)
 				return false;
-			}
+			if (counterSkill.IsOnCooldown)
+				return false;
+			counterSkill.State = SkillState.Used;
 
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<Counterattack>(SkillId.Counterattack);
 			handler.Use(target, attacker);
