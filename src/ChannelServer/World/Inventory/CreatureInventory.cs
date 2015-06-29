@@ -1247,8 +1247,6 @@ namespace Aura.Channel.World.Inventory
 				) //Only unequip left hand if item is two handed, is a magazine, or the left hand has a guard cylinder and the item is not a cylinder.
             { return; }
 
-
-
 			// Try inventory first.
 			// TODO: List of pockets stuff can be auto-moved to.
 			var success = _pockets[Pocket.Inventory].Add(leftItem);
