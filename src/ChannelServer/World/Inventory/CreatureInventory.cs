@@ -1143,18 +1143,7 @@ namespace Aura.Channel.World.Inventory
 			var rightItem = this.RightHand;
 
 			// Move 2H weapon if shield is equipped
-			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand) ||
-					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
-						(
-							rightItem != null
-						)
-					) ||
-					((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
-						(
-							rightItem != null
-						)
-					)
-				)
+			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand))
 			{
 				// Switch item
 				var success = _pockets[source].Add(rightItem);
