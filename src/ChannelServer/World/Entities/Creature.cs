@@ -779,6 +779,7 @@ namespace Aura.Channel.World.Entities
 
 			this.Vars = new ScriptVariables();
 
+			AttackFilter = new List<object>();
 			AttackFilter.Add(CreatureStates.GoodNpc);
 		}
 
