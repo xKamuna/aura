@@ -284,6 +284,12 @@ namespace Aura.Channel.World.Entities
         public bool AttemptingAttack { get; set; }
 		public Creature LastKnockedBackBy { get; set; }
 
+		//Attack filter
+		/// <summary>
+		/// Basic attack filter.  All tags, creature states and creatures within this filter cannot be attacked.
+		/// </summary>
+		public List<object> AttackFilter { get; set; }
+
 
 
 		public bool WasKnockedBack { get; set; }
@@ -772,7 +778,9 @@ namespace Aura.Channel.World.Entities
 			this.AimMeter = new AimMeter(this);
 
 			this.Vars = new ScriptVariables();
-        }
+
+			AttackFilter.Add(CreatureStates.GoodNpc);
+		}
 
 		/// <summary>
 		/// Loads race and handles some basic stuff, like adding regens.
@@ -1256,7 +1264,7 @@ namespace Aura.Channel.World.Entities
 		}
 
 		/// <summary>
-		/// Returns true if creature is able to attack this creature.
+		/// Returns true if creature is able to target this creature.
 		/// </summary>
 		/// <param name="creature"></param>
 		/// <returns></returns>
@@ -1264,6 +1272,36 @@ namespace Aura.Channel.World.Entities
 		{
 			if (this.IsDead || creature.IsDead)
 				return false;
+
+			return true;
+		}
+
+		/// <summary>
+		/// Returns true if creature is able to attack this creature.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <returns></returns>
+		public bool CanAttack(Creature creature)
+		{
+			foreach (object target in AttackFilter)
+			{
+				//Check state first, then tag, then the creature itself.
+				if(target is CreatureStates)
+				{
+					if(creature.Has((CreatureStates)target))
+						return false;
+                }
+				else if (target is string)
+				{
+					if (creature.HasTag((string)target))
+						return false;
+				}
+				else
+				{
+					if (creature == target)
+						return false;
+				}
+			}
 
 			return true;
 		}
@@ -1996,7 +2034,7 @@ namespace Aura.Channel.World.Entities
 
 				return target != this // Exclude creature
 					&& this.CanTarget(target) // Check targetability
-					&& ((!this.Has(CreatureStates.Npc) || !target.Has(CreatureStates.Npc)) || this.Target == target) // Allow NPC on NPC only if it's the creature's target
+					&& this.CanAttack(target) // Check if attackable
 					&& targetPos.InRange(position, radius) // Check range
 					&& !this.Region.Collisions.Any(position, targetPos) // Check collisions between position
 					&& !target.Conditions.Has(ConditionsA.Invisible); // Check visiblility (GM)
@@ -2013,7 +2051,7 @@ namespace Aura.Channel.World.Entities
 		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
 		{	
 			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
-			var targetable = visible.FindAll(a => this.CanTarget(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
+			var targetable = visible.FindAll(a => this.CanTarget(a) && this.CanAttack(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
 			return targetable;
 		}
 
@@ -2026,7 +2064,7 @@ namespace Aura.Channel.World.Entities
 
 				return target != this // Exclude creature
 					&& this.CanTarget(target) // Check targetability
-					&& ((!this.Has(CreatureStates.Npc) || !target.Has(CreatureStates.Npc)) || this.Target == target) // Allow NPC on NPC only if it's the creature's target
+					&& this.CanAttack(target) // Check if attackable
 					&& targetPos.InRange(position, radius) // Check range
 					&& Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(position.X, position.Y), 
 						Mabi.MabiMath.ByteToDirection(this.Direction), new Mabi.MabiMath.Vector2(targetPos.X, targetPos.Y), 

@@ -151,7 +151,7 @@ namespace Aura.Channel.Network.Handlers
 
 			// Check target
 			var target = creature.Region.GetCreature(targetEntityId);
-			if (target == null || !creature.CanTarget(target))
+			if (target == null || !creature.CanTarget(target) || !creature.CanAttack(target))
 				goto L_End;
 
 			// Check Stun

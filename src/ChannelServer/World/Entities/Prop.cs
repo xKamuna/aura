@@ -376,7 +376,7 @@ namespace Aura.Channel.World.Entities
 				var targetPos = target.GetPosition();
 
 				return target != owner // Exclude owner
-					&& (owner == null || owner.CanTarget(target)) // Check targetability
+					&& (owner == null || owner.CanTarget(target) && owner.CanAttack(target)) // Check targetability
 					&& !target.IsDead // Check if target's alive (in case owner is null)
 					&& !target.Has(CreatureStates.NamedNpc) // Don't hit NamedNpcs (in case owner is null)
 					&& targetPos.InRange(pos, range) // Check range

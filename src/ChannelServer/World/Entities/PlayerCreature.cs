@@ -91,6 +91,8 @@ namespace Aura.Channel.World.Entities
 		{
 			this.Watching = true;
 			this.UseBattleStanceFromAOE = true;
+			AttackFilter.Add("/pc/");
+			AttackFilter.Add("/pet/");
 		}
 
 		/// <summary>
