@@ -69,7 +69,7 @@ namespace Aura.Channel.Skills.Combat
 		public override void Complete(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillComplete(creature, skill.Info.Id);
-			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				Send.ResetCooldown(creature, skill.Info.Id);
 			}

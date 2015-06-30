@@ -64,7 +64,7 @@ namespace Aura.Channel.Skills.Combat
 		public override void Complete(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillComplete(creature, skill.Info.Id);
-			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				Send.ResetCooldown(creature, skill.Info.Id);
 			}
@@ -203,7 +203,7 @@ namespace Aura.Channel.Skills.Combat
 			if (!target.IsDead)
 			{
 					//Timer for getting back up.
-					System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && tAction.Stun > 2000 ? 2000 : tAction.Stun);
+					System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && target.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
 
 					getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 					getUpTimer.Enabled = true;
