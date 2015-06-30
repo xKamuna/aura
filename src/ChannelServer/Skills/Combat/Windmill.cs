@@ -311,6 +311,10 @@ namespace Aura.Channel.Skills.Combat
 						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
 				}
 			}
+			else
+			{
+				Send.ResetCooldown(attacker, skill.Info.Id);
+			}
 
 			Send.SkillUse(attacker, skill.Info.Id, targetAreaId, unkInt1, unkInt2);
 

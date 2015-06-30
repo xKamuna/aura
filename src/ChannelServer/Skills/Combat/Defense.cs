@@ -119,6 +119,10 @@ namespace Aura.Channel.Skills.Combat
 			{
 				defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 			}
+			else
+			{
+				Send.ResetCooldown(tAction.Creature, defenseSkill.Info.Id);
+			}
 
 			// Updating unlock because of the updating lock for pre-renovation
 			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))

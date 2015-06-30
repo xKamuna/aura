@@ -361,6 +361,10 @@ namespace Aura.Channel.Skills.Combat
 			{
 				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
 			}
+			else
+			{
+				Send.ResetCooldown(attacker, skill.Info.Id);
+            }
 
 			return CombatSkillResult.Okay;
 		}
