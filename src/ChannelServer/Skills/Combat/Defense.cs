@@ -66,15 +66,6 @@ namespace Aura.Channel.Skills.Combat
 			return true;
 		}
 
-		public override void Complete(Creature creature, Skill skill, Packet packet)
-		{
-			Send.SkillComplete(creature, skill.Info.Id);
-			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
-			{
-				Send.ResetCooldown(creature, skill.Info.Id);
-			}
-		}
-
 		/// <summary>
 		/// Readies the skill, called when casting is done.
 		/// </summary>
@@ -130,7 +121,12 @@ namespace Aura.Channel.Skills.Combat
 			}
 			else
 			{
-				Send.ResetCooldown(tAction.Creature, defenseSkill.Info.Id);
+				//Temporary timer for resetting cooldown
+				System.Timers.Timer resetTimer = new System.Timers.Timer(DefenseTargetStun);
+
+				resetTimer.Elapsed += (sender, e) => { if (tAction != null && tAction.Creature != null && defenseSkill != null) { resetTimer.Enabled = false; Send.ResetCooldown(tAction.Creature, defenseSkill.Info.Id); resetTimer = null; } };
+				resetTimer.Enabled = true;
+
 			}
 
 			// Updating unlock because of the updating lock for pre-renovation
