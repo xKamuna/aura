@@ -50,11 +50,15 @@ namespace Aura.Channel.Skills.Combat
 		public override bool Prepare(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillFlashEffect(creature);
+
 			Send.SkillPrepare(creature, skill.Info.Id, skill.GetCastTime());
 
 			// Disable movement and update client if renovation isn't enabled.
 			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
+			{
 				creature.Lock(Locks.Run, true);
+				creature.Unlock(Locks.Move, true);
+			}
 			// Disable running if no shield is equipped
 			else if (creature.LeftHand == null || !creature.LeftHand.IsShield)
 				creature.Lock(Locks.Run);
