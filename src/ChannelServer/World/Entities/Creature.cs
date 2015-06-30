@@ -638,7 +638,10 @@ namespace Aura.Channel.World.Entities
 				var result = this.DefenseBase + this.DefenseBaseMod + this.DefenseMod;
 
 				// Str defense is displayed automatically on the client side
-				result += (int)Math.Max(0, (this.Str - 10f) / 10f);
+				if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+				{
+					result += (int)Math.Max(0, (this.Str - 10f) / 10f);
+				}
 
 				// Add bonus for healing
 				if (this.Skills.IsActive(SkillId.Healing))

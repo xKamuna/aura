@@ -246,7 +246,7 @@ namespace Aura.Channel.Network.Sending
 
 						case Stat.DefenseBase: packet.PutShort((short)creature.DefenseBase); break;
 						case Stat.ProtectionBase: packet.PutFloat(creature.ProtectionBase); break;
-						case Stat.DefenseBaseMod: packet.PutShort((short)creature.DefenseBaseMod); break;
+						case Stat.DefenseBaseMod: packet.PutShort((short)(creature.DefenseBaseMod-(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") ? 0 : Math.Max(0, (creature.Str - 10f) / 10f)))); break; //Since client already updates Defense, remove the STR defense from showing if combat renewal is off.
 						case Stat.ProtectionBaseMod: packet.PutFloat(creature.ProtectionBaseMod); break;
 						case Stat.DefenseMod: packet.PutShort((short)creature.DefenseMod); break;
 						case Stat.ProtectionMod: packet.PutFloat(creature.ProtectionMod); break;
