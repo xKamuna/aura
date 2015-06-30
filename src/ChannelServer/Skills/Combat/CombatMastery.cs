@@ -355,7 +355,7 @@ namespace Aura.Channel.Skills.Combat
 					if ((TargetOptions.KnockDown & tAction.Options) != 0)
 					{
 						//Timer for getting back up.
-						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+						System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && tAction.Stun > 2000 ? 2000 : tAction.Stun);
 
 						getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 						getUpTimer.Enabled = true;

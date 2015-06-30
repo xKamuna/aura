@@ -29,6 +29,7 @@ namespace Aura.Channel.Skills.Combat
 		/// Time in milliseconds that attacker and creature are stunned for
 		/// after use.
 		/// </summary>
+		private const short AttackStunTime = 2500;
 		private const short StunTime = 3000;
 
 		/// <summary>
@@ -58,6 +59,12 @@ namespace Aura.Channel.Skills.Combat
 				creature.Lock(Locks.Move);
 
 			return true;
+		}
+
+		public override void Complete(Creature creature, Skill skill, Packet packet)
+		{
+			Send.SkillComplete(creature, skill.Info.Id);
+			Send.ResetCooldown(creature, skill.Info.Id);
 		}
 
 		/// <summary>
@@ -180,20 +187,20 @@ namespace Aura.Channel.Skills.Combat
 				tAction.Options |= TargetOptions.FinishingKnockDown;
 
 			
-			if(attacker.IsCharacter && AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && StunTime > 2000)
+			if(attacker.IsCharacter && AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				aAction.Stun = 2000;
 			}
 			else
 			{
-				aAction.Stun = StunTime;
+				aAction.Stun = AttackStunTime;
 			}
 			tAction.Stun = StunTime;
 
 			if (!target.IsDead)
 			{
 					//Timer for getting back up.
-					System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun-1000);
+					System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && tAction.Stun > 2000 ? 2000 : tAction.Stun);
 
 					getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
 					getUpTimer.Enabled = true;
