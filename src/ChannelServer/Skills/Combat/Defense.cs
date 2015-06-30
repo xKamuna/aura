@@ -66,6 +66,15 @@ namespace Aura.Channel.Skills.Combat
 			return true;
 		}
 
+		public override void Complete(Creature creature, Skill skill, Packet packet)
+		{
+			Send.SkillComplete(creature, skill.Info.Id);
+			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			{
+				Send.ResetCooldown(creature, skill.Info.Id);
+			}
+		}
+
 		/// <summary>
 		/// Readies the skill, called when casting is done.
 		/// </summary>
