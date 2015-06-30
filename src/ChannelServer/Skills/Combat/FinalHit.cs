@@ -49,6 +49,19 @@ namespace Aura.Channel.Skills.Combat
 			Send.SkillFlashEffect(creature);
 			Send.SkillPrepare(creature, skill.Info.Id, skill.GetCastTime());
 
+			if (skill.Info.Rank < SkillRank.R5)
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(300000);
+			}
+			else if (skill.Info.Rank < SkillRank.R1)
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(270000);
+			}
+			else
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(240000);
+			}
+
 			return true;
 		}
 
@@ -67,19 +80,6 @@ namespace Aura.Channel.Skills.Combat
 			creature.Temp.FinalHitKillCountStrong = 0;
 			creature.Temp.FinalHitKillCountAwful = 0;
 			creature.Temp.FinalHitKillCountBoss = 0;
-
-			if (skill.Info.Rank < SkillRank.R5)
-			{
-				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(300000);
-			}
-			else if (skill.Info.Rank < SkillRank.R1)
-			{
-				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(270000);
-			}
-			else
-			{
-				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(240000);
-			}
 
 			double duration = 1;
 			if (skill.Info.Rank < SkillRank.RD)
