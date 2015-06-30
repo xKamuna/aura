@@ -279,8 +279,8 @@ namespace Aura.Channel.Skills.Combat
 			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				var tenPercent = attacker.LifeMax / 10;
-				//var amount = (attacker.Life < tenPercent ? 2 : tenPercent);
-				attacker.ModifyLife(-tenPercent);
+				var amount = (attacker.LifeMax < 10 ? 2 : tenPercent);
+				attacker.ModifyLife(-amount);
 
 				attacker.InvincibilityTime = DateTime.Now.AddMilliseconds(2300);
 			}
