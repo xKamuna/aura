@@ -282,7 +282,7 @@ namespace Aura.Channel.Skills.Combat
 				var amount = (attacker.Life < tenPercent ? 2 : tenPercent);
 				attacker.ModifyLife(-amount);
 
-				// TODO: Invincibility
+				attacker.InvincibilityTime = DateTime.Now.AddMilliseconds(2300);
 			}
 
 			// Spin it~
@@ -290,23 +290,26 @@ namespace Aura.Channel.Skills.Combat
 
 			cap.Handle();
 
-			if (skill.Info.Rank >= SkillRank.R9)
+			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
-				if(attacker.IsHuman)
-                    skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
-				else if (attacker.IsElf)
-					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
-				else if (attacker.IsGiant)
-					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
-			}
-			else
-			{
-				if(attacker.IsHuman)
-					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
-				else if (attacker.IsElf)
-					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4500);
-				else if (attacker.IsGiant)
-					skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
+				if (skill.Info.Rank >= SkillRank.R9)
+				{
+					if (attacker.IsHuman)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
+					else if (attacker.IsElf)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
+					else if (attacker.IsGiant)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
+				}
+				else
+				{
+					if (attacker.IsHuman)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4000);
+					else if (attacker.IsElf)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(4500);
+					else if (attacker.IsGiant)
+						skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3500);
+				}
 			}
 
 			Send.SkillUse(attacker, skill.Info.Id, targetAreaId, unkInt1, unkInt2);

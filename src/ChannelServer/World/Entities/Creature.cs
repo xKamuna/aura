@@ -290,6 +290,9 @@ namespace Aura.Channel.World.Entities
 		/// </summary>
 		public List<object> AttackFilter { get; set; }
 
+		public DateTime InvincibilityTime { get; set; }
+
+		public bool IsInvincible { get { return (DateTime.Now < this.InvincibilityTime); } }
 
 
 		public bool WasKnockedBack { get; set; }
@@ -1284,6 +1287,8 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		public bool CanAttack(Creature creature)
 		{
+			if (creature.IsInvincible)
+				return false;
 			foreach (object target in AttackFilter)
 			{
 				//Check state first, then tag, then the creature itself.

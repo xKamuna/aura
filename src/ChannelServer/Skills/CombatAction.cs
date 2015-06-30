@@ -13,6 +13,7 @@ using Aura.Channel.Network.Sending;
 using Aura.Shared.Util;
 using Aura.Channel.Skills.Life;
 using Aura.Channel.Skills.Base;
+using Aura.Data;
 
 namespace Aura.Channel.Skills
 {
@@ -115,7 +116,7 @@ namespace Aura.Channel.Skills
 			foreach (var action in this.Actions)
 			{
 				// Max target stun for players == 2000?
-				if (action.Category == CombatActionCategory.Target && action.Creature.IsPlayer)
+				if (action.Category == CombatActionCategory.Target && action.Creature.IsPlayer && AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 					action.Stun = (short)Math.Min(2000, (int)action.Stun);
 
 				action.Creature.Stun = action.Stun;

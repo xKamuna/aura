@@ -111,7 +111,10 @@ namespace Aura.Channel.Skills.Combat
 				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
 			damage = Math.Max(1, damage - defenseSkill.RankData.Var3 - shieldPassiveDefense);
 
-			defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			{
+				defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+			}
 
 			// Updating unlock because of the updating lock for pre-renovation
 			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))

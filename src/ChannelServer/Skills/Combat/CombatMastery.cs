@@ -15,6 +15,7 @@ using Aura.Channel.Skills.Life;
 using Aura.Mabi;
 using Aura.Channel.Skills.Magic;
 using Aura.Channel.Network.Sending;
+using Aura.Data;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -71,8 +72,9 @@ namespace Aura.Channel.Skills.Combat
 
 			attacker.IgnoreAttackRange = false;
 
+			//Against Smash
 			Skill smash = target.Skills.Get(SkillId.Smash);
-			if (smash != null && target.Skills.IsReady(SkillId.Smash))
+			if (smash != null && target.Skills.IsReady(SkillId.Smash) && attacker.CanAttack(target))
 				attacker.InterceptingSkillId = SkillId.Smash;
 
 			var rightWeapon = attacker.RightHand;
@@ -95,7 +97,7 @@ namespace Aura.Channel.Skills.Combat
 			var simultaneousAttackStun = 0;
 			if(attacker.InterceptingSkillId != SkillId.CombatMastery && target.InterceptingSkillId != SkillId.CombatMastery)
 			{
-				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && (!target.IsStunned || target.IsKnockedDown))
+				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && (!target.IsStunned || target.IsKnockedDown) && attacker.CanAttack(target))
 				{
 					var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 					var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
@@ -105,16 +107,19 @@ namespace Aura.Channel.Skills.Combat
 						!Math2.Probability(((2725 - attackerStunTime) / 2500) * 100) //Probability in percentage that you will not lose.  2725 is 2500 (Slowest stun) + 225 (Fastest stun divided by two so that the fastest stun isn't 100%)
 						&& !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime && attacker.KnockDownTime.AddMilliseconds(attackerStunTime) < DateTime.Now)))
 					{
-						target.InterceptingSkillId = SkillId.CombatMastery;
-						target.IgnoreAttackRange = true;
-						var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
-						if (skillHandler == null)
+						if (target.CanAttack(attacker))
 						{
-							Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+							target.InterceptingSkillId = SkillId.CombatMastery;
+							target.IgnoreAttackRange = true;
+							var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+							if (skillHandler == null)
+							{
+								Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+								return CombatSkillResult.Okay;
+							}
+							skillHandler.Use(target, combatMastery, attacker.EntityId);
 							return CombatSkillResult.Okay;
 						}
-						skillHandler.Use(target, combatMastery, attacker.EntityId);
-						return CombatSkillResult.Okay;
 					}
 					else
 					{
@@ -125,18 +130,21 @@ namespace Aura.Channel.Skills.Combat
 						else
 						{
 							attacker.InterceptingSkillId = SkillId.CombatMastery;
-							target.InterceptingSkillId = SkillId.CombatMastery;
-							target.IgnoreAttackRange = true;
-							var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
-							if (skillHandler == null)
+							if (target.CanAttack(attacker))
 							{
-								Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
-							}
-							else
-							{
-								skillHandler.Use(target, combatMastery, attacker.EntityId);
-								simultaneousAttackStun = attacker.Stun;
-								attacker.Stun = 0;
+								target.InterceptingSkillId = SkillId.CombatMastery;
+								target.IgnoreAttackRange = true;
+								var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(combatMastery.Info.Id);
+								if (skillHandler == null)
+								{
+									Log.Error("CombatMastery.Use: Target's skill handler not found for '{0}'.", combatMastery.Info.Id);
+								}
+								else
+								{
+									skillHandler.Use(target, combatMastery, attacker.EntityId);
+									simultaneousAttackStun = attacker.Stun;
+									attacker.Stun = 0;
+								}
 							}
 						}
 
@@ -328,7 +336,7 @@ namespace Aura.Channel.Skills.Combat
 				{
 					if (simultaneousAttackStun == 0)
 					{
-						aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && (skill.Info.Id != SkillId.FinalHit) && !target.IsDead);
+						aAction.Stun = GetAttackerStun(attacker, weapon, tAction.IsKnockBack && ((skill.Info.Id != SkillId.FinalHit) && !target.IsDead || AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal")));
 					}
 					else
 					{

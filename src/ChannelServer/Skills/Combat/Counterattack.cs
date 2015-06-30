@@ -198,7 +198,10 @@ namespace Aura.Channel.Skills.Combat
 			// Update both weapons
 			SkillHelper.UpdateWeapon(attacker, target, attacker.RightHand, attacker.LeftHand);
 
-			skill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+			}
 
 			Send.SkillUseStun(attacker, skill.Info.Id, AttackStunTime, 1);
 

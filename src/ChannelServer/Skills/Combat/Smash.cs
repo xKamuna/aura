@@ -6,6 +6,7 @@ using Aura.Channel.Skills.Base;
 using Aura.Channel.Skills.Magic;
 using Aura.Channel.World;
 using Aura.Channel.World.Entities;
+using Aura.Data;
 using Aura.Data.Database;
 using Aura.Mabi.Const;
 using Aura.Mabi.Network;
@@ -133,9 +134,9 @@ namespace Aura.Channel.Skills.Combat
 			}
 
 			// Against Windmill
-			//TODO: Change this into the new NPC client system when it comes out.
+			//TODO: Change this into the new NPC client system when it comes out if needed.
 			Skill windmill = target.Skills.Get(SkillId.Windmill);
-			if (windmill != null && target.Skills.IsReady(SkillId.Windmill) && !target.IsPlayer)
+			if (windmill != null && target.Skills.IsReady(SkillId.Windmill) && !target.IsPlayer && target.CanAttack(attacker))
 			{
 				target.InterceptingSkillId = SkillId.Smash;
 				var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<IUseable>(windmill.Info.Id) as Windmill;
@@ -151,7 +152,7 @@ namespace Aura.Channel.Skills.Combat
 			// Against Smash
 			Skill smash = target.Skills.Get(SkillId.Smash);
 			
-            if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned)
+            if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned && attacker.CanAttack(target))
 			{
 				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
@@ -161,16 +162,19 @@ namespace Aura.Channel.Skills.Combat
 						!Math2.Probability(((2725 - attackerStunTime) / 2500) * 100) //Probability in percentage that you will not lose.  2725 is 2500 (Slowest stun) + 225 (Fastest stun divided by two so that the fastest stun isn't 100%)
 						&& !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime && attacker.KnockDownTime.AddMilliseconds(attackerStunTime) < DateTime.Now)))
 				{
-					target.InterceptingSkillId = SkillId.Smash;
-					target.IgnoreAttackRange = true;
-					var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(smash.Info.Id);
-					if (skillHandler == null)
+					if (target.CanAttack(attacker))
 					{
-						Log.Error("Smash.Use: Target's skill handler not found for '{0}'.", smash.Info.Id);
+						target.InterceptingSkillId = SkillId.Smash;
+						target.IgnoreAttackRange = true;
+						var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ICombatSkill>(smash.Info.Id);
+						if (skillHandler == null)
+						{
+							Log.Error("Smash.Use: Target's skill handler not found for '{0}'.", smash.Info.Id);
+							return CombatSkillResult.Okay;
+						}
+						skillHandler.Use(target, smash, attacker.EntityId);
 						return CombatSkillResult.Okay;
 					}
-					skillHandler.Use(target, smash, attacker.EntityId);
-					return CombatSkillResult.Okay;
 				}
 				else
 				{
@@ -353,7 +357,10 @@ namespace Aura.Channel.Skills.Combat
 			// Action!
 			cap.Handle();
 
-			skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
+			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+			{
+				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
+			}
 
 			return CombatSkillResult.Okay;
 		}

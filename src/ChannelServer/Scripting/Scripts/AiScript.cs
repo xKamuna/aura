@@ -1063,6 +1063,10 @@ namespace Aura.Channel.Scripting.Scripts
 				{
 					this.Creature.AttemptingAttack = true;
 				}
+				if (!this.Creature.CanAttack(this.Creature.Target))
+				{
+					yield return true;
+				}
 				if (skillHandler2 != null)
 				{
 					skillHandler2.Use(this.Creature, skill, this.Creature.Target.EntityId, 0 , 0);
