@@ -148,9 +148,13 @@ namespace Aura.Channel.Skills
 					}
 
 					// Cancel target's skill
+					// Don't cancel Defense, which is still active at this point,
+					// a Complete for it is sent by the client shortly after.
+					// That won't happen if Smash is the attacker skill,
+					// but that's official behavior.
 					if (!action.Creature.Skills.IsReady(SkillId.FinalHit) || action.IsKnockBack)
 					{
-						if (action.Creature.Skills.ActiveSkill != null)
+						if (action.Creature.Skills.ActiveSkill != null && action.Creature.Skills.ActiveSkill.Info.Id != SkillId.Defense)
 						{
 							if (action.Creature.IsDead)
 							{

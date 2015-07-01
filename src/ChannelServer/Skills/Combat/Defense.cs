@@ -53,15 +53,20 @@ namespace Aura.Channel.Skills.Combat
 
 			Send.SkillPrepare(creature, skill.Info.Id, skill.GetCastTime());
 
-			// Disable movement and update client if renovation isn't enabled.
-			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
+			// Default lock is Walk|Run, since renovation you're not able to
+			// move while loading anymore.
+			if (AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
+			{
+				creature.StopMove();
+			}
+			// Since the client locks Walk|Run by default we have to tell it
+			// to enable walk but disable run (under any circumstances) if
+			// renovation is disabled.
+			else
 			{
 				creature.Lock(Locks.Run, true);
-				creature.Unlock(Locks.Move, true);
+				creature.Unlock(Locks.Walk, true);
 			}
-			// Disable running if no shield is equipped
-			else if (creature.LeftHand == null || !creature.LeftHand.IsShield)
-				creature.Lock(Locks.Run);
 
 			return true;
 		}
@@ -75,6 +80,20 @@ namespace Aura.Channel.Skills.Combat
 		public override bool Ready(Creature creature, Skill skill, Packet packet)
 		{
 			Send.SkillReady(creature, skill.Info.Id);
+
+			// No default locks, set them depending on whether a shield is
+			// equipped or not.
+			if (AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
+			{
+				if (creature.LeftHand == null || !creature.LeftHand.IsShield)
+					creature.Lock(Locks.Run);
+			}
+			// Send lock to client if renovation isn't enabled,
+			// so it doesn't let the creature run, no matter what.
+			else
+			{
+				creature.Lock(Locks.Run, true);
+			}
 
 			// Training
 			if (skill.Info.Rank == SkillRank.RF)
@@ -118,15 +137,6 @@ namespace Aura.Channel.Skills.Combat
 			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
-			}
-			else
-			{
-				//Temporary timer for resetting cooldown
-				System.Timers.Timer resetTimer = new System.Timers.Timer(DefenseTargetStun);
-
-				resetTimer.Elapsed += (sender, e) => { if (tAction != null && tAction.Creature != null && defenseSkill != null) { resetTimer.Enabled = false; Send.ResetCooldown(tAction.Creature, defenseSkill.Info.Id); resetTimer = null; } };
-				resetTimer.Enabled = true;
-
 			}
 
 			// Updating unlock because of the updating lock for pre-renovation
