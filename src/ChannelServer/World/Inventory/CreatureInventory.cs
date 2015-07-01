@@ -432,8 +432,8 @@ namespace Aura.Channel.World.Inventory
 				if ((target == Pocket.Head || target == Pocket.HeadStyle) && !item.HasTag("/head/"))
 					return false;
 				if ((target == Pocket.Magazine1 || target == Pocket.Magazine2)
-					&&	(
-					RightHand == null 
+					&& (
+					RightHand == null
 					|| (!item.HasTag("/arrow/") && RightHand.HasTag("/bow/") || item.HasTag("/arrow/") && !RightHand.HasTag("/bow/"))
 					&& (!item.HasTag("/bolt/") && RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && !RightHand.HasTag("/crossbow/") || item.HasTag("/bolt/") && RightHand.Data.Id == 40220) //40220 is Ballista
 					&& (!item.HasTag("/giant_throw/") && RightHand.HasTag("/atlatl/") || item.HasTag("/giant_throw/") && !RightHand.HasTag("/atlatl/"))
@@ -441,7 +441,10 @@ namespace Aura.Channel.World.Inventory
 					&& (!item.HasTag("/bullet/") && RightHand.HasTag("/dualgun/") || item.HasTag("/bullet/") && !RightHand.HasTag("/dualgun/"))
 						)
 					)
-                { return false; }
+				{ return false; }
+				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2)
+					&& item.HasTag("/fishing/bait/") && (RightHand == null || !RightHand.HasTag("/fishingrod/"))) //No equipping fishing bait without a fishing rod!
+				{ return false; }
 				if ((target == Pocket.Robe || target == Pocket.RobeStyle) && !item.HasTag("/robe/"))
 					return false;
 				if ((target == Pocket.Shoe || target == Pocket.ShoeStyle) && !item.HasTag("/foot/"))
