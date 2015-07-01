@@ -25,30 +25,13 @@ namespace Aura.Channel.Skills.Life
 	public class Rest : StartStopSkillHandler
 	{
 		/// <summary>
-		/// Starts rest skill.
+		/// Applies rest bonuses.
 		/// </summary>
 		/// <param name="creature"></param>
 		/// <param name="skill"></param>
-		/// <param name="dict"></param>
-		/// <returns></returns>
-		public override StartStopResult Start(Creature creature, Skill skill, MabiDictionary dict)
+		/// <param name="chairItemEntityId"></param>
+		public static void ApplyRestBonus(Creature creature, Skill skill, long chairItemEntityId)
 		{
-			creature.StopMove();
-
-			creature.IsInBattleStance = false;
-			creature.AttemptingAttack = false;
-
-			var chairItemEntityId = dict.GetLong("ITEMID");
-
-			if (chairItemEntityId != 0)
-				this.SetUpChair(creature, chairItemEntityId);
-
-			creature.Activate(CreatureStates.SitDown);
-			if (skill.Info.Rank >= SkillRank.R9)
-				creature.Activate(CreatureStatesEx.RestR9);
-
-			Send.SitDown(creature);
-
 			// Get base bonuses
 			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
 			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
@@ -87,10 +70,46 @@ namespace Aura.Channel.Skills.Life
 
 				Send.Notice(creature, Localization.Get("The fire feels very warm"));
 			}
-
 			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
 			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
 			creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+		}
+
+		/// <summary>
+		/// Starts rest skill.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <param name="skill"></param>
+		/// <param name="dict"></param>
+		/// <returns></returns>
+		public override StartStopResult Start(Creature creature, Skill skill, MabiDictionary dict)
+		{
+			creature.StopMove();
+
+			creature.IsInBattleStance = false;
+			creature.AttemptingAttack = false;
+
+			var chairItemEntityId = dict.GetLong("ITEMID");
+
+			if (chairItemEntityId != 0)
+				this.SetUpChair(creature, chairItemEntityId);
+
+			creature.Activate(CreatureStates.SitDown);
+			if (skill.Info.Rank >= SkillRank.R9)
+				creature.Activate(CreatureStatesEx.RestR9);
+
+			Send.SitDown(creature);
+
+			// Get bonuses
+			ApplyRestBonus(creature, skill, chairItemEntityId);
+
+			// Add bonus from campfire
+			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
+			var campfires = creature.Region.GetProps(a => a.Info.Id == 203 && a.GetPosition().InRange(creature.GetPosition(), 500));
+			if (campfires.Count > 0)
+			{
+				Send.Notice(creature, Localization.Get("The fire feels very warm."));
+			}
 
 			if (skill.Info.Rank == SkillRank.Novice) skill.Train(1); // Use Rest.
 

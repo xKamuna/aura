@@ -37,6 +37,7 @@ namespace Aura.Channel.Skills.Magic
 
 			// "Disable" stm regen, triple hunger
 			creature.Regens.Add("Meditation", Stat.Stamina, -0.4f, creature.StaminaMax);
+			creature.Regens.Remove("Rest");
 			if (ChannelServer.Instance.Conf.World.EnableHunger)
 				creature.Regens.Add("Meditation", Stat.Hunger, 0.02f, creature.StaminaMax);
 
@@ -58,6 +59,11 @@ namespace Aura.Channel.Skills.Magic
 		{
 			creature.Regens.Remove("Meditation");
 			creature.Conditions.Deactivate(ConditionsE.Meditation);
+			var restSkill = creature.Skills.Get(SkillId.Rest);
+			if(restSkill != null && creature.Has(CreatureStates.SitDown))
+			{
+				Life.Rest.ApplyRestBonus(creature, skill, creature.Temp.SittingProp != null ? creature.Temp.SittingProp.EntityId : 0);
+			}
 
 			return StartStopResult.Okay;
 		}
