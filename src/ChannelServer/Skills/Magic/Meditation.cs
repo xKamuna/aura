@@ -62,7 +62,7 @@ namespace Aura.Channel.Skills.Magic
 			var restSkill = creature.Skills.Get(SkillId.Rest);
 			if(restSkill != null && creature.Has(CreatureStates.SitDown))
 			{
-				Life.Rest.ApplyRestBonus(creature, skill, creature.Temp.SittingProp != null ? creature.Temp.SittingProp.EntityId : 0);
+				Life.Rest.ApplyRestBonus(creature, restSkill, creature.Temp.SittingProp != null ? creature.Temp.SittingProp.EntityId : 0);
 			}
 
 			return StartStopResult.Okay;

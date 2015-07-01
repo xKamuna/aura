@@ -67,8 +67,6 @@ namespace Aura.Channel.Skills.Life
 					bonusStamina *= multi;
 					bonusInjury *= multi;
 				}
-
-				Send.Notice(creature, Localization.Get("The fire feels very warm"));
 			}
 			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
 			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
@@ -100,8 +98,9 @@ namespace Aura.Channel.Skills.Life
 
 			Send.SitDown(creature);
 
-			// Get bonuses
-			ApplyRestBonus(creature, skill, chairItemEntityId);
+			// Get bonuses if meditation isn't active.
+			if(!creature.Conditions.Has(ConditionsE.Meditation))
+				ApplyRestBonus(creature, skill, chairItemEntityId);
 
 			// Add bonus from campfire
 			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
