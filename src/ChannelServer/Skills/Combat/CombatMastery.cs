@@ -515,8 +515,8 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public static short GetAttackerStun(Creature creature, Item weapon, bool knockback)
 		{
-			var count = weapon != null ? weapon.Info.KnockCount + 1 : creature.RaceData.KnockCount + 1;
-			var speed = weapon != null ? (AttackSpeed)weapon.Data.AttackSpeed : (AttackSpeed)creature.RaceData.AttackSpeed;
+			var count = (weapon != null && weapon.HasTag("/weapon/")) ? weapon.Info.KnockCount + 1 : creature.RaceData.KnockCount + 1;
+			var speed = (weapon != null && weapon.HasTag("/weapon/")) ? (AttackSpeed)weapon.Data.AttackSpeed : (AttackSpeed)creature.RaceData.AttackSpeed;
 
 			return GetAttackerStun(count, speed, knockback);
 		}
@@ -693,8 +693,8 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public float GetStabilityReduction(Creature creature, Item weapon)
 		{
-			var count = weapon != null ? weapon.Info.KnockCount + 1 : creature.RaceData.KnockCount + 1;
-			var speed = weapon != null ? (AttackSpeed)weapon.Data.AttackSpeed : (AttackSpeed)creature.RaceData.AttackSpeed;
+			var count = (weapon != null && weapon.HasTag("/weapon/")) ? weapon.Info.KnockCount + 1 : creature.RaceData.KnockCount + 1;
+			var speed = (weapon != null && weapon.HasTag("/weapon/")) ? (AttackSpeed)weapon.Data.AttackSpeed : (AttackSpeed)creature.RaceData.AttackSpeed;
 
 			// All values have been taken from the weapons data, the values in
 			// comments were estimates, mainly based on logs.
