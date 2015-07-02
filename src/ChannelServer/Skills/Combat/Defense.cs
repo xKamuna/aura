@@ -112,40 +112,59 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public static bool Handle(AttackerAction aAction, TargetAction tAction, ref float damage, bool ranged = false)
 		{
-			// Defense
-			if (!tAction.Creature.Skills.IsReady(SkillId.Defense))
+			var activeSkill = tAction.Creature.Skills.ActiveSkill;
+			if (activeSkill == null || activeSkill.Info.Id != SkillId.Defense || activeSkill.State != SkillState.Ready)
 				return false;
-
-			// Reduce damage
-			var defenseSkill = tAction.Creature.Skills.Get(SkillId.Defense);
-			if (defenseSkill == null)
+			if (activeSkill.IsOnCooldown)
 				return false;
-			if (defenseSkill.IsOnCooldown)
-				return false;
-			defenseSkill.State = SkillState.Used;
+			activeSkill.State = SkillState.Used;
 
 			// Update actions
 			tAction.Type = CombatActionType.Defended;
 			tAction.SkillId = SkillId.Defense;
 			tAction.Stun = DefenseTargetStun;
 			aAction.Stun = DefenseAttackerStun;
+
+			// Reduce damage
 			var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
 			if (damage > shieldPassiveDefense)
 				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
-			damage = Math.Max(1, damage - defenseSkill.RankData.Var3 - shieldPassiveDefense);
+			damage = Math.Max(1, damage - activeSkill.RankData.Var3 - shieldPassiveDefense);
 
 			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
-				defenseSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
+				activeSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
 			}
 
 			// Updating unlock because of the updating lock for pre-renovation
+			// Other skills actually unlock automatically on the client,
+			// I guess this isn't the case for Defense because it's never
+			// *explicitly* used.
 			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
 				tAction.Creature.Unlock(Locks.Run, true);
 
 			Send.SkillUseStun(tAction.Creature, SkillId.Defense, DefenseTargetStun, 0);
 
 			return true;
+		}
+
+		/// <summary>
+		/// Resets the skill's cooldown in old combat.
+		/// </summary>
+		/// <remarks>
+		/// Defense doesn't use the new cooldown system, but Vars, similar
+		/// to Final Hit. Var7 seems to be the cooldown. That's why we have to
+		/// reset it here.
+		/// </remarks>
+		/// <param name="creature"></param>
+		/// <param name="skill"></param>
+		/// <param name="packet"></param>
+		public override void Complete(Creature creature, Skill skill, Packet packet)
+		{
+			base.Complete(creature, skill, packet);
+
+			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+				Send.ResetCooldown(creature, skill.Info.Id);
 		}
 
 		/// <summary>
@@ -158,23 +177,6 @@ namespace Aura.Channel.Skills.Combat
 			// Updating unlock because of the updating lock for pre-renovation
 			if (!AuraData.FeaturesDb.IsEnabled("TalentRenovationCloseCombat"))
 				creature.Unlock(Locks.Run, true);
-		}
-
-		/// <summary>
-		/// Resets the skill's cooldown in old combat.
-		/// </summary>
-		/// <remarks>
-		/// Defense doesn't use the new cooldown system, no idea why.
-		/// </remarks>
-		/// <param name="creature"></param>
-		/// <param name="skill"></param>
-		/// <param name="packet"></param>
-		public override void Complete(Creature creature, Skill skill, Packet packet)
-		{
-			base.Complete(creature, skill, packet);
-
-			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
-				Send.ResetCooldown(creature, skill.Info.Id);
 		}
 
 		/// <summary>
