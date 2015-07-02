@@ -39,6 +39,21 @@ namespace Aura.Channel.Skills.Life
 
 			// Add bonus from campfire
 			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
+			float[] bonuses = ApplyRestCampfireBonus(creature, skill, chairItemEntityId, false);
+			bonusLife += bonuses[0];
+			bonusStamina += bonuses[1];
+			bonusInjury += bonuses[2];
+			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
+			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
+			creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+		}
+
+		public static float[] ApplyRestCampfireBonus(Creature creature, Skill skill, long chairItemEntityId, bool apply = true)
+		{
+			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
+			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
+			var bonusInjury = skill.RankData.Var3;
+
 			var campfires = creature.Region.GetProps(a => a.Info.Id == 203 && a.GetPosition().InRange(creature.GetPosition(), 500));
 			if (campfires.Count > 0)
 			{
@@ -62,15 +77,27 @@ namespace Aura.Channel.Skills.Life
 							multi += 0.3f;
 					}
 
+					multi -= 1f;
+
 					// Apply multiplicator
 					bonusLife *= multi;
 					bonusStamina *= multi;
 					bonusInjury *= multi;
+					if (apply)
+					{
+						creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
+						creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
+						creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+					}
 				}
 			}
-			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
-			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
-			creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+			else
+			{
+				bonusLife = 0f;
+				bonusStamina = 0f;
+				bonusInjury = 0f;
+			}
+			return new float[] { bonusLife, bonusStamina, bonusInjury };
 		}
 
 		/// <summary>
@@ -99,8 +126,14 @@ namespace Aura.Channel.Skills.Life
 			Send.SitDown(creature);
 
 			// Get bonuses if meditation isn't active.
-			if(!creature.Conditions.Has(ConditionsE.Meditation))
+			if (!creature.Conditions.Has(ConditionsE.Meditation))
+			{
 				ApplyRestBonus(creature, skill, chairItemEntityId);
+			}
+			else
+			{
+				ApplyRestCampfireBonus(creature, skill, chairItemEntityId);
+			}
 
 			// Add bonus from campfire
 			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
