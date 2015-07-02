@@ -80,14 +80,21 @@ namespace Aura.Channel.Skills.Life
 					multi -= 1f;
 
 					// Apply multiplicator
-					bonusLife *= multi;
-					bonusStamina *= multi;
-					bonusInjury *= multi;
+					
 					if (apply)
 					{
+						bonusLife *= (1 + multi);
+						bonusStamina *= multi;
+						bonusInjury *= (1 + multi);
 						creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
 						creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
 						creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+					}
+					else
+					{
+						bonusLife *= multi;
+						bonusStamina *= multi;
+						bonusInjury *= multi;
 					}
 				}
 			}
