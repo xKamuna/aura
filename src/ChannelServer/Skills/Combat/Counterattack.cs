@@ -105,11 +105,11 @@ namespace Aura.Channel.Skills.Combat
 			{
 				if (creature.RightHand != null && creature.RightHand.Data.HasTag("/weapon/knuckle/"))
 				{
-					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(4000)); //skill.RankData.Var11
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(skill.RankData.Var11));
 				}
 				else
 				{
-					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(7000)); //skill.RankData.Var10
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(skill.RankData.Var10));
                 }
 			}
 		}
