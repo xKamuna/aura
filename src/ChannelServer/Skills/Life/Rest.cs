@@ -63,7 +63,7 @@ namespace Aura.Channel.Skills.Life
 					// TODO: Select nearest? Random?
 					var campfire = campfires[0];
 
-					var multi = (campfire.Temp.CampfireSkillRank != null ? campfire.Temp.CampfireSkillRank.Var1 / 100f : 1);
+					var multi = (campfire.Temp.CampfireSkillRank != null && campfire.Temp.CampfireSkillRank.Var1 != 0 ? campfire.Temp.CampfireSkillRank.Var1 / 100f : 1);
 
 					// Add bonus for better wood.
 					// Amounts unofficial.
