@@ -14,6 +14,7 @@ namespace Aura.Channel.World
 		Dictionary<object, DateTime> CooldownDictionary { get; set; }
 		public CooldownManager(Creature creature)
 		{
+			CooldownDictionary = new Dictionary<object, DateTime>();
 			this.Creature = creature;
 		} 
 
