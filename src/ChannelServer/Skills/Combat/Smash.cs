@@ -357,11 +357,6 @@ namespace Aura.Channel.Skills.Combat
 			// Action!
 			cap.Handle();
 
-			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
-			{
-				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(3000);
-			}
-
 			return CombatSkillResult.Okay;
 		}
 

@@ -115,7 +115,7 @@ namespace Aura.Channel.Skills.Combat
 			var activeSkill = tAction.Creature.Skills.ActiveSkill;
 			if (activeSkill == null || activeSkill.Info.Id != SkillId.Defense || activeSkill.State != SkillState.Ready)
 				return false;
-			if (activeSkill.IsOnCooldown)
+			if (tAction.Creature.CooldownManager.IsOnCooldown(activeSkill))
 				return false;
 			activeSkill.State = SkillState.Used;
 
@@ -130,11 +130,6 @@ namespace Aura.Channel.Skills.Combat
 			if (damage > shieldPassiveDefense)
 				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
 			damage = Math.Max(1, damage - activeSkill.RankData.Var3 - shieldPassiveDefense);
-
-			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
-			{
-				activeSkill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
-			}
 
 			// Updating unlock because of the updating lock for pre-renovation
 			// Other skills actually unlock automatically on the client,
@@ -165,6 +160,8 @@ namespace Aura.Channel.Skills.Combat
 
 			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 				Send.ResetCooldown(creature, skill.Info.Id);
+			else
+				creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(skill.RankData.Var7));
 		}
 
 		/// <summary>

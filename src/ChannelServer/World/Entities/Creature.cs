@@ -297,6 +297,8 @@ namespace Aura.Channel.World.Entities
 
 		public bool WasKnockedBack { get; set; }
 
+		public CooldownManager CooldownManager { get; set; }
+
 		/// <summary>
 		/// Returns weapon's knock count or the race's if not weapon
 		/// is equipped.
@@ -785,8 +787,10 @@ namespace Aura.Channel.World.Entities
 
 			this.Vars = new ScriptVariables();
 
-			AttackFilter = new List<object>();
-			AttackFilter.Add(CreatureStates.GoodNpc);
+			this.CooldownManager = new CooldownManager(this);
+
+			this.AttackFilter = new List<object>();
+			this.AttackFilter.Add(CreatureStates.GoodNpc);
 		}
 
 		/// <summary>

@@ -83,12 +83,12 @@ namespace Aura.Channel.Network.Handlers
 
 			var skill = creature.Skills.GetSafe(skillId);
 
-			if (skill.IsOnCooldown)
+			if (creature.CooldownManager.IsOnCooldown(skill))
 			{
 				if(client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
 				{
 					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
-					skill.EndCooldownTime = DateTime.Now;
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now);
 				}
 				else
 				{
@@ -214,12 +214,12 @@ namespace Aura.Channel.Network.Handlers
 			var skill = creature.Skills.GetSafe(skillId);
 			skill.State = SkillState.None;
 
-			if (skill.IsOnCooldown)
+			if (creature.CooldownManager.IsOnCooldown(skill))
 			{
 				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
 				{
 					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
-					skill.EndCooldownTime = DateTime.Now;
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now);
 				}
 				else
 				{
@@ -505,8 +505,8 @@ namespace Aura.Channel.Network.Handlers
 					// but they didn't use the CoolDown field.
 					if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 						Send.ResetCooldown(creature, skill.Info.Id);
-
-					// else TODO: Set skill's cooldown for security reasons.
+					else
+						creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(skill.RankData.CoolDown));
 				}
 
 				// Unlock everything once we're done?

@@ -101,6 +101,17 @@ namespace Aura.Channel.Skills.Combat
 
 			if (!AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 				Send.ResetCooldown(creature, skill.Info.Id);
+			else
+			{
+				if (creature.RightHand != null && creature.RightHand.Data.HasTag("/weapon/knuckle/"))
+				{
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(4000)); //skill.RankData.Var11
+				}
+				else
+				{
+					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(7000)); //skill.RankData.Var10
+                }
+			}
 		}
 
 		/// <summary>
@@ -133,7 +144,7 @@ namespace Aura.Channel.Skills.Combat
 			var counterSkill = target.Skills.Get(SkillId.Counterattack);
 			if (counterSkill == null)
 				return false;
-			if (counterSkill.IsOnCooldown)
+			if (target.CooldownManager.IsOnCooldown(counterSkill))
 				return false;
 			counterSkill.State = SkillState.Used;
 
@@ -232,11 +243,6 @@ namespace Aura.Channel.Skills.Combat
 
 			// Update both weapons
 			SkillHelper.UpdateWeapon(attacker, target, attacker.RightHand, attacker.LeftHand);
-
-			if (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
-			{
-				skill.EndCooldownTime = DateTime.Now.AddMilliseconds(7000);
-			}
 
 			Send.SkillUseStun(attacker, skill.Info.Id, aAction.Stun, 1);
 

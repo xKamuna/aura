@@ -216,6 +216,7 @@
     <Compile Include="Util\GmCommands.cs" />
     <Compile Include="Util\Quadtree.cs" />
     <Compile Include="Util\Security.cs" />
+    <Compile Include="World\CooldownManager.cs" />
     <Compile Include="World\Cutscene.cs" />
     <Compile Include="World\Dungeons\Dungeon.cs" />
     <Compile Include="World\Dungeons\DungeonBoss.cs" />
