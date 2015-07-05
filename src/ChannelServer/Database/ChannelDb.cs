@@ -268,6 +268,7 @@ namespace Aura.Channel.Database
 			this.GetCharacterTitles(character);
 			this.GetCharacterSkills(character);
 			this.GetCharacterQuests(character);
+			this.GetCharacterCooldowns(character);
 
 			// Add bank tab for characters
 			// TODO: Bank tabs for pets?
@@ -627,6 +628,53 @@ namespace Aura.Channel.Database
 		}
 
 		/// <summary>
+		/// Reads cooldowns from database and adds them to character.
+		/// </summary>
+		/// <param name="character"></param>
+		private void GetCharacterCooldowns(PlayerCreature character)
+		{
+			using (var conn = this.Connection)
+			using (var mc = new MySqlCommand("SELECT * FROM `cooldowns` WHERE `creatureId` = @creatureId", conn))
+			{
+				mc.Parameters.AddWithValue("@creatureId", character.CreatureId);
+
+				using (var reader = mc.ExecuteReader())
+				{
+					while (reader.Read())
+					{
+						var typeString = reader.GetString("type");
+						var cooldownEndTime = reader.GetDateTime("cooldownEndTime");
+						if (DateTime.Now < cooldownEndTime)
+						{
+							if (!string.IsNullOrWhiteSpace(typeString))
+							{
+                                var assembly = typeof(SkillId).Assembly;
+								Type type = assembly.GetType(typeString);
+								if (type == null)
+								{
+									assembly = typeof(ChannelServer).Assembly;
+									type = assembly.GetType(typeString);
+								}
+								object id = null;
+								if (type != null)
+								{
+									if (type.IsEnum)
+										id = Enum.Parse(type, reader.GetInt32("id").ToString());
+									else
+										id = Convert.ChangeType(reader.GetInt32("id"), type);
+									if (id != null)
+									{
+										character.CooldownManager.SetCooldownUnsafe(id, cooldownEndTime);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		/// <summary>
 		/// Reads all quests of character from db.
 		/// </summary>
 		/// <param name="character"></param>
@@ -975,7 +1023,7 @@ namespace Aura.Channel.Database
 			this.SaveCharacterKeywords(creature);
 			this.SaveCharacterTitles(creature);
 			this.SaveCharacterSkills(creature);
-			//this.SaveCharacterCooldowns(creature);
+			this.SaveCharacterCooldowns(creature);
 
 			this.SaveVars(account.Id, creature.CreatureId, creature.Vars.Perm);
 		}
@@ -1175,6 +1223,39 @@ namespace Aura.Channel.Database
 						cmd.Set("condition7", skill.Info.ConditionCount7);
 						cmd.Set("condition8", skill.Info.ConditionCount8);
 						cmd.Set("condition9", skill.Info.ConditionCount9);
+
+						cmd.Execute();
+					}
+				}
+
+				transaction.Commit();
+			}
+		}
+
+
+		/// <summary>
+		/// Writes all of creature's cooldowns to the database.
+		/// </summary>
+		/// <param name="creature"></param>
+		private void SaveCharacterCooldowns(PlayerCreature creature)
+		{
+			using (var conn = this.Connection)
+			using (var transaction = conn.BeginTransaction())
+			{
+				using (var mc = new MySqlCommand("DELETE FROM `cooldowns` WHERE `creatureId` = @creatureId", conn, transaction))
+				{
+					mc.Parameters.AddWithValue("@creatureId", creature.CreatureId);
+					mc.ExecuteNonQuery();
+				}
+
+				foreach (var kv in creature.CooldownManager.GetDictionary())
+				{
+					using (var cmd = new InsertCommand("INSERT INTO `cooldowns` {0}", conn, transaction))
+					{
+						cmd.Set("id", (ushort)kv.Key);
+						cmd.Set("creatureId", creature.CreatureId);
+						cmd.Set("type", kv.Key.GetType().ToString());
+						cmd.Set("cooldownEndTime", kv.Value);
 
 						cmd.Execute();
 					}

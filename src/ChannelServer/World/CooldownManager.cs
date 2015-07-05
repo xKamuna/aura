@@ -1,4 +1,5 @@
-﻿using Aura.Channel.World.Entities;
+﻿using Aura.Channel.Skills;
+using Aura.Channel.World.Entities;
 using Aura.Mabi.Const;
 using System;
 using System.Collections.Generic;
@@ -18,38 +19,52 @@ namespace Aura.Channel.World
 			this.Creature = creature;
 		} 
 
-		public bool IsOnCooldown(object cooldownObject)
+		public bool IsOnCooldown(Skill skill)
 		{
-			if(this.CooldownDictionary.ContainsKey(cooldownObject))
-				return (DateTime.Now < this.CooldownDictionary[cooldownObject]);
+			if(this.CooldownDictionary.ContainsKey(skill.Info.Id))
+				return (DateTime.Now < this.CooldownDictionary[skill.Info.Id]);
 			return false;
 		}
 
-		public bool IsOnCooldown(SkillId cooldownId)
+		public bool IsOnCooldown(SkillId skillId)
 		{
-			var cooldownObject = this.Creature.Skills.Get(cooldownId);
-			if (cooldownObject != null && this.CooldownDictionary.ContainsKey(cooldownObject))
-				return (DateTime.Now < this.CooldownDictionary[cooldownObject]);
+			if (this.CooldownDictionary.ContainsKey(skillId))
+				return (DateTime.Now < this.CooldownDictionary[skillId]);
 			return false;
 		}
 
-		public void SetCooldown(object cooldownObject, DateTime endTime)
+		public void SetCooldown(Skill skill, DateTime endTime)
 		{
-			if (this.CooldownDictionary.ContainsKey(cooldownObject))
-				this.CooldownDictionary[cooldownObject] = endTime;
+			if (this.CooldownDictionary.ContainsKey(skill.Info.Id))
+				this.CooldownDictionary[skill.Info.Id] = endTime;
 			else
-				this.CooldownDictionary.Add(cooldownObject, endTime);
+				this.CooldownDictionary.Add(skill.Info.Id, endTime);
 		}
 
-		public void SetCooldown(SkillId cooldownId, DateTime endTime)
+		/// <summary>
+		/// Do not use this method if possible.  Instead, add a new method.
+		/// </summary>
+		/// <param name="skillId"></param>
+		/// <param name="endTime"></param>
+		public void SetCooldownUnsafe(object id, DateTime endTime)
 		{
-			var cooldownObject = this.Creature.Skills.Get(cooldownId);
-			if (cooldownObject == null)
-				return;
-			if (this.CooldownDictionary.ContainsKey(cooldownObject))
-				this.CooldownDictionary[cooldownObject] = endTime;
+			if (this.CooldownDictionary.ContainsKey(id))
+				this.CooldownDictionary[id] = endTime;
 			else
-				this.CooldownDictionary.Add(cooldownObject, endTime);
+				this.CooldownDictionary.Add(id, endTime);
+		}
+
+		public void SetCooldown(SkillId skillId, DateTime endTime)
+		{
+			if (this.CooldownDictionary.ContainsKey(skillId))
+				this.CooldownDictionary[skillId] = endTime;
+			else
+				this.CooldownDictionary.Add(skillId, endTime);
+		}
+
+		public Dictionary<object, DateTime> GetDictionary()
+		{
+			return CooldownDictionary;
 		}
 
 	}

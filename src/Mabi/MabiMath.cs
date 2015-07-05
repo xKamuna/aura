@@ -115,7 +115,11 @@ namespace Aura.Mabi
 		{
 			return (float)(Math.PI / 180f * degree);
 		}
-
+		/// <summary>
+		/// Converts Mabi's byte direction into vector direction.
+		/// </summary>
+		/// <param name="directionByte"></param>
+		/// <returns></returns>
 		public static Vector2 ByteToDirection(byte directionByte)
 		{
 			float theta = ByteToRadian(directionByte); //Direction as radian, just makes the byte go into radian form.  2*pi*r for circumference, 255 because byte goes from 0-255, etc etc.
