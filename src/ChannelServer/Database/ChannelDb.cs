@@ -655,9 +655,9 @@ namespace Aura.Channel.Database
 									assembly = typeof(ChannelServer).Assembly;
 									type = assembly.GetType(typeString);
 								}
-								object id = null;
 								if (type != null)
 								{
+									object id = null;
 									if (type.IsEnum)
 										id = Enum.Parse(type, reader.GetInt32("id").ToString());
 									else
