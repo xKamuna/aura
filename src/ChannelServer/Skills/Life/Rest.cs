@@ -25,89 +25,6 @@ namespace Aura.Channel.Skills.Life
 	public class Rest : StartStopSkillHandler
 	{
 		/// <summary>
-		/// Applies rest bonuses.
-		/// </summary>
-		/// <param name="creature"></param>
-		/// <param name="skill"></param>
-		/// <param name="chairItemEntityId"></param>
-		public static void ApplyRestBonus(Creature creature, Skill skill, long chairItemEntityId)
-		{
-			// Get base bonuses
-			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
-			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
-			var bonusInjury = skill.RankData.Var3;
-
-			// Add bonus from campfire
-			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
-			float[] bonuses = ApplyRestCampfireBonus(creature, skill, chairItemEntityId, false);
-			bonusLife += bonuses[0];
-			bonusStamina += bonuses[1];
-			bonusInjury += bonuses[2];
-			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
-			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
-			creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
-		}
-
-		public static float[] ApplyRestCampfireBonus(Creature creature, Skill skill, long chairItemEntityId, bool apply = true)
-		{
-			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
-			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
-			var bonusInjury = skill.RankData.Var3;
-
-			var campfires = creature.Region.GetProps(a => a.Info.Id == 203 && a.GetPosition().InRange(creature.GetPosition(), 500));
-			if (campfires.Count > 0)
-			{
-				// Add bonus if no chair?
-				if (chairItemEntityId == 0)
-				{
-					// TODO: Select nearest? Random?
-					var campfire = campfires[0];
-
-					var multi = (campfire.Temp.CampfireSkillRank != null && campfire.Temp.CampfireSkillRank.Var1 != 0 ? campfire.Temp.CampfireSkillRank.Var1 / 100f : 1);
-
-					// Add bonus for better wood.
-					// Amounts unofficial.
-					if (campfire.Temp.CampfireFirewood != null)
-					{
-						if (campfire.Temp.CampfireFirewood.HasTag("/firewood01/"))
-							multi += 0.1f;
-						else if (campfire.Temp.CampfireFirewood.HasTag("/firewood02/"))
-							multi += 0.2f;
-						else if (campfire.Temp.CampfireFirewood.HasTag("/firewood03/"))
-							multi += 0.3f;
-					}
-
-					multi -= 1f;
-
-					// Apply multiplicator
-					
-					if (apply)
-					{
-						bonusLife *= (1 + multi);
-						bonusStamina *= multi;
-						bonusInjury *= (1 + multi);
-						creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
-						creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
-						creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
-					}
-					else
-					{
-						bonusLife *= multi;
-						bonusStamina *= multi;
-						bonusInjury *= multi;
-					}
-				}
-			}
-			else
-			{
-				bonusLife = 0f;
-				bonusStamina = 0f;
-				bonusInjury = 0f;
-			}
-			return new float[] { bonusLife, bonusStamina, bonusInjury };
-		}
-
-		/// <summary>
 		/// Starts rest skill.
 		/// </summary>
 		/// <param name="creature"></param>
@@ -139,7 +56,7 @@ namespace Aura.Channel.Skills.Life
 			}
 			else
 			{
-				ApplyRestCampfireBonus(creature, skill, chairItemEntityId);
+				RestCampfireBonus(creature, skill, chairItemEntityId);
 			}
 
 			// Add bonus from campfire
@@ -251,6 +168,99 @@ namespace Aura.Channel.Skills.Life
 			creature.Temp.SittingProp.DisappearTime = DateTime.Now.AddSeconds(1);
 
 			creature.Temp.SittingProp = null;
+		}
+
+		/// <summary>
+		/// Applies rest bonuses.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <param name="skill"></param>
+		/// <param name="chairItemEntityId"></param>
+		public static void ApplyRestBonus(Creature creature, Skill skill, long chairItemEntityId)
+		{
+			// Get base bonuses
+			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
+			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
+			var bonusInjury = skill.RankData.Var3;
+
+			// Add bonus from campfire
+			// TODO: Check for disappearing of campfire? (OnDisappears+Recheck)
+			float[] bonuses = RestCampfireBonus(creature, skill, chairItemEntityId, false);
+			//Apply campfire bonuses.
+			bonusLife += bonuses[0];
+			bonusStamina += bonuses[1];
+			bonusInjury += bonuses[2];
+			creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
+			creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
+			creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+		}
+		/// <summary>
+		/// Apply or get campfire bonuses.
+		/// </summary>
+		/// <param name="creature"></param>
+		/// <param name="skill"></param>
+		/// <param name="chairItemEntityId"></param>
+		/// <param name="apply"></param>
+		/// <returns></returns>
+		public static float[] RestCampfireBonus(Creature creature, Skill skill, long chairItemEntityId, bool meditating = true)
+		{
+			var bonusLife = ((skill.RankData.Var1 - 100) / 100);
+			var bonusStamina = ((skill.RankData.Var2 - 100) / 100);
+			var bonusInjury = skill.RankData.Var3;
+
+			var campfires = creature.Region.GetProps(a => a.Info.Id == 203 && a.GetPosition().InRange(creature.GetPosition(), 500));
+			if (campfires.Count > 0)
+			{
+				// Add bonus if no chair?
+				if (chairItemEntityId == 0)
+				{
+					// TODO: Select nearest? Random?
+					var campfire = campfires[0];
+
+					var multi = (campfire.Temp.CampfireSkillRank != null && campfire.Temp.CampfireSkillRank.Var1 != 0 ? campfire.Temp.CampfireSkillRank.Var1 / 100f : 1);
+
+					// Add bonus for better wood.
+					// Amounts unofficial.
+					if (campfire.Temp.CampfireFirewood != null)
+					{
+						if (campfire.Temp.CampfireFirewood.HasTag("/firewood01/"))
+							multi += 0.1f;
+						else if (campfire.Temp.CampfireFirewood.HasTag("/firewood02/"))
+							multi += 0.2f;
+						else if (campfire.Temp.CampfireFirewood.HasTag("/firewood03/"))
+							multi += 0.3f;
+					}
+
+					multi -= 1f;
+
+					// Apply multiplicator
+					if (meditating)
+					{
+						//Apply bonuses automatically if meditating.
+						bonusLife *= (1 + multi); //Regular bonus to life
+						bonusStamina *= multi; //Reduced bonus to due to meditation
+						bonusInjury *= (1 + multi);//Regular bonus to life
+						creature.Regens.Add("Rest", Stat.Life, (0.12f * bonusLife), creature.LifeMax);
+						creature.Regens.Add("Rest", Stat.Stamina, (0.4f * bonusStamina), creature.StaminaMax);
+						creature.Regens.Add("Rest", Stat.LifeInjured, bonusInjury, creature.LifeMax); // TODO: Test if LifeInjured = Injuries
+					}
+					else
+					{
+						//All reduced bonuses, however, they will be added onto the normal rest bonus to make it a regular bonus.
+						bonusLife *= multi;
+						bonusStamina *= multi;
+						bonusInjury *= multi;
+					}
+				}
+			}
+			else
+			{
+				//No bonuses!
+				bonusLife = 0f;
+				bonusStamina = 0f;
+				bonusInjury = 0f;
+			}
+			return new float[] { bonusLife, bonusStamina, bonusInjury };
 		}
 	}
 }

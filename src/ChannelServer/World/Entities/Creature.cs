@@ -18,6 +18,8 @@ using Aura.Channel.World.Inventory;
 using Aura.Channel.Skills.Life;
 using System.Collections.Generic;
 using Aura.Channel.Skills;
+using System.Timers;
+using Aura.Channel.Skills.Magic;
 
 namespace Aura.Channel.World.Entities
 {
@@ -281,14 +283,18 @@ namespace Aura.Channel.World.Entities
 		public DateTime AttackDelayTime { get; set; }
 		public bool IsOnAttackDelay { get { return (DateTime.Now < this.AttackDelayTime); } }
 		public SkillId InterceptingSkillId { get; set; }
-        public bool AttemptingAttack { get; set; }
+		public bool AttemptingAttack { get; set; }
 		public Creature LastKnockedBackBy { get; set; }
 
-		//Attack filter
 		/// <summary>
-		/// Basic attack filter.  All tags, creature states and creatures within this filter cannot be attacked.
+		/// Basic attack filter.  All tags, creature states, and creatures within this filter cannot be attacked.
 		/// </summary>
 		public List<object> AttackFilter { get; set; }
+		
+		/// <summary>
+		/// Basic attack filter override.  All tags, creature states, and creatures within this filter can be attacked, even if they are also in the AttackFilter.
+		/// </summary>
+		public List<object> AttackOverride { get; set; }
 
 		public DateTime InvincibilityTime { get; set; }
 
@@ -632,6 +638,7 @@ namespace Aura.Channel.World.Entities
 		/// </summary>
 		public int DefenseBase { get { return this.RaceData.Defense; } }
 		public int DefenseBaseMod { get { return (int)this.StatMods.Get(Stat.DefenseBaseMod) + this.Inventory.GetEquipmentDefense(); } } // Skills, Titles, etc?
+		public int DefenseBaseModClient { get { return (int)(this.DefenseBaseMod - (AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") ? 0 : Math.Max(0, (this.Str - 10f) / 10f))); } } // The DefenseBaseMod sent to the client.
 		public int DefenseMod { get { return (int)this.StatMods.Get(Stat.DefenseMod); } } // eg Reforging? (yellow)
 		public int Defense
 		{
@@ -790,7 +797,7 @@ namespace Aura.Channel.World.Entities
 			this.CooldownManager = new CooldownManager(this);
 
 			this.AttackFilter = new List<object>();
-			this.AttackFilter.Add(CreatureStates.GoodNpc);
+			this.AttackOverride = new List<object>();
 		}
 
 		/// <summary>
@@ -1296,14 +1303,35 @@ namespace Aura.Channel.World.Entities
 		{
 			if (creature.IsInvincible)
 				return false;
-			foreach (object target in AttackFilter)
+			//Check override first...
+			foreach (object target in this.AttackOverride)
 			{
 				//Check state first, then tag, then the creature itself.
-				if(target is CreatureStates)
+				if (target is CreatureStates)
 				{
-					if(creature.Has((CreatureStates)target))
+					if (creature.Has((CreatureStates)target))
+						return true;
+				}
+				else if (target is string)
+				{
+					if (creature.HasTag((string)target))
+						return true;
+				}
+				else
+				{
+					if (creature == target)
+						return true;
+				}
+			}
+			//Then check the actual filter.
+			foreach (object target in this.AttackFilter)
+			{
+				//Check state first, then tag, then the creature itself.
+				if (target is CreatureStates)
+				{
+					if (creature.Has((CreatureStates)target))
 						return false;
-                }
+				}
 				else if (target is string)
 				{
 					if (creature.HasTag((string)target))
@@ -1428,17 +1456,17 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		public float GetRndTotalDamage()
 		{
-			if(this.RightHand != null && this.RightHand.Durability == 0)
+			if (this.RightHand != null && this.RightHand.Durability == 0)
 			{
 				if (this.LeftHand != null && this.LeftHand.Durability != 0)
 				{
 					return ((GetRndBareHandDamage() + GetRndLeftHandDamage()) / 2);
-                }
+				}
 				else
 				{
 					return GetRndBareHandDamage();
-                }
-            }
+				}
+			}
 			var balance = 0;
 			if (this.RightHand == null)
 				balance = this.BalanceBase + this.BalanceBaseMod;
@@ -1589,7 +1617,22 @@ namespace Aura.Channel.World.Entities
 		/// <param name="from"></param>
 		/// <param name="lifeBefore"></param>
 		/// <returns></returns>
-		protected abstract bool ShouldSurvive(float damage, Creature from, float lifeBefore);
+		protected virtual bool ShouldSurvive(float damage, Creature from, float lifeBefore)
+		{
+			// No surviving once you're in deadly
+			if (lifeBefore < 0)
+				return false;
+
+			if (!ChannelServer.Instance.Conf.World.DeadlyNpcs)
+				return false;
+
+			// Chance = Will/10, capped at 50%
+			// (i.e 80 Will = 8%, 500+ Will = 50%)
+			// Actual formula unknown
+			// Added life proximity to the formula.
+			var chance = Math.Min(50, this.Will / 10 + (LifeMax > 0 ? ((this.Life / this.LifeMax) * 10) : 0));
+			return (RandomProvider.Get().Next(101) < chance);
+		}
 
 		/// <summary>
 		/// Kills creature.
@@ -1935,6 +1978,48 @@ namespace Aura.Channel.World.Entities
 
 			return Math.Max(0, baseCritical - protection);
 		}
+		/// <summary>
+		/// Calculates and sets splash damage reductions and bonuses against splashTarget.
+		/// </summary>
+		/// <param name="splashTarget"></param>
+		/// <param name="damageSplash"></param>
+		/// <param name="skill"></param>
+		/// <param name="critSkill"></param>
+		/// <param name="aAction"></param>
+		/// <param name="tAction"></param>
+		/// <param name="tSplashAction"></param>
+		public void CalculateSplashDamage(Creature splashTarget, ref float damageSplash, Skill skill, Skill critSkill, AttackerAction aAction, TargetAction tAction, TargetAction tSplashAction, Item weapon = null)
+		{
+			//Splash Damage Reduction
+			if (skill.Info.Id == SkillId.Smash)
+				damageSplash *= skill.Info.Rank < SkillRank.R1 ? 0.1f : 0.2f;
+			else
+				damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0f;
+
+			// Critical Hit
+			if (critSkill != null && tAction.Has(TargetOptions.Critical))
+			{
+				// Add crit bonus
+				var bonus = critSkill.RankData.Var1 / 100f;
+				damageSplash = damageSplash + (damageSplash * bonus);
+
+				// Set splashTarget option
+				tSplashAction.Set(TargetOptions.Critical);
+			}
+
+			var maxDamageSplash = damageSplash; //Damage without Defense and Protection
+			// Subtract splashTarget def/prot
+			SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
+
+			// Defense
+			Channel.Skills.Combat.Defense.Handle(aAction, tSplashAction, ref damageSplash);
+
+			// Mana Shield
+			ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction, maxDamageSplash);
+
+			if (damageSplash <= 0f)
+				damageSplash = 1f;
+		}
 
 		/// <summary>
 		/// Returns Rest pose based on skill's rank.
@@ -1980,7 +2065,7 @@ namespace Aura.Channel.World.Entities
 			return newPos;
 		}
 
-		public void GetBackUp(object sender, System.Timers.ElapsedEventArgs e, System.Timers.Timer getUpTimer)
+		public void GetBackUp(object sender, ElapsedEventArgs e, Timer getUpTimer)
 		{
 			getUpTimer.Enabled = false;
 			// Recover from knock back/down after stun ended
@@ -2038,11 +2123,10 @@ namespace Aura.Channel.World.Entities
 					// This is unofficial, the target's "hitbox" should be
 					// factored in, but the total attack range is too much.
 					// Using 50% for now until we know more.
+					radius += this.AttackRangeFor(target) / 2;
 
-					//Figured out a decent formula... Try it.
-					//Formula didn't work on big spiders.  Using a different one.
-					//This one works well:
-					radius += (int)(Math.Max(this.RaceData.AttackRange * this.BodyScale, target.RaceData.AttackRange * target.BodyScale) - (170/2)); //170/2 = Half of a player's base range.
+					//Alternate formula, for safekeeping purposes.
+					//radius += (int)(Math.Max(this.RaceData.AttackRange * this.BodyScale, target.RaceData.AttackRange * target.BodyScale) - (170/2)); //170/2 = Half of a player's base range.
 				}
 
 				return target != this // Exclude creature
@@ -2056,22 +2140,10 @@ namespace Aura.Channel.World.Entities
 			return targetable;
 		}
 
-		/// <summary>
-		/// OBSOLETE.
-		/// </summary>
-		/// <param name="range"></param>
-		/// <returns></returns>
-		public ICollection<Creature> GetTargetableCreaturesInRangeUsingHitbox(int range)
-		{	
-			var visible = this.Region.GetVisibleCreaturesInRangeUsingHitbox(this, range);
-			var targetable = visible.FindAll(a => this.CanTarget(a) && this.CanAttack(a) && !this.Region.Collisions.Any(this.GetPosition(), a.GetPosition()));
-			return targetable;
-		}
-
 		public ICollection<Creature> GetTargetableCreaturesInCone(int radius, int angle)
 		{
 			Position position = this.GetPosition();
-            var targetable = this.Region.GetCreatures(target =>
+			var targetable = this.Region.GetCreatures(target =>
 			{
 				var targetPos = target.GetPosition();
 
@@ -2079,9 +2151,9 @@ namespace Aura.Channel.World.Entities
 					&& this.CanTarget(target) // Check targetability
 					&& this.CanAttack(target) // Check if attackable
 					&& targetPos.InRange(position, radius) // Check range
-					&& Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(position.X, position.Y), 
-						Mabi.MabiMath.ByteToDirection(this.Direction), new Mabi.MabiMath.Vector2(targetPos.X, targetPos.Y), 
-						Mabi.MabiMath.DegreeToRadian(angle), radius) //Check that the target is in a FOV cone.
+					&& Vector2.IsPointInsideCone(new Vector2(position.X, position.Y),
+						MabiMath.ByteToDirection(this.Direction), new Vector2(targetPos.X, targetPos.Y),
+						MabiMath.DegreeToRadian(angle), radius) //Check that the target is in a FOV cone.
 					&& !this.Region.Collisions.Any(position, targetPos) // Check collisions between position
 					&& !target.Conditions.Has(ConditionsA.Invisible); // Check visiblility (GM)
 			});
@@ -2093,20 +2165,7 @@ namespace Aura.Channel.World.Entities
 		/// Aggroes target, setting target and putting creature in battle stance.
 		/// </summary>
 		/// <param name="creature"></param>
-		public virtual void Aggro(Creature target, bool alert = false)
-		{
-			this.IsInBattleStance = true;
-			this.Target = target;
-			if (alert)
-			{
-				Send.SetCombatTarget(this, target.EntityId, TargetMode.Aggro);
-			}
-			else
-			{
-				Send.SetCombatTarget(this, target.EntityId, TargetMode.Alert);
-			}
-			Send.CombatTargetUpdate(this, target.EntityId);
-		}
+		public abstract void Aggro(Creature target, bool alert = false);
 
 		/// <summary>
 		/// Disposes creature and removes it from its current region.
@@ -2244,5 +2303,17 @@ namespace Aura.Channel.World.Entities
 		{
 			return ((this.Locks & locks) == 0);
 		}
+
+		/// <summary>
+		/// Updates an item to show notices based on the tool, with an optional durability decrease check.
+		/// </summary>
+		public void UpdateTool(Item tool, int durabilityReduced = 0)
+		{
+			if (tool.Durability > 0 && tool.Durability - durabilityReduced <= 0)
+			{
+				Send.Notice(this, Localization.Get("The durability of {0} has reached 0."), tool.Data.Name);
+			}
+		}
+
 	}
 }

@@ -196,17 +196,7 @@ namespace Aura.Channel.Skills.Combat
 					aAction.Set(AttackerOptions.KnockBackHit1);
 					tAction.Set(TargetOptions.Finished);
 				}
-				else
-				{
-					if ((TargetOptions.KnockDown & tAction.Options) != 0)
-					{
-						//Timer for getting back up.
-						System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
 
-						getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-						getUpTimer.Enabled = true;
-					}
-				}
 				var weapon = attacker.RightHand;
 				var critSkill = attacker.Skills.Get(SkillId.CriticalHit);
 				if (skill.Info.Rank >= SkillRank.R5 && weapon != null && weapon.Data.SplashRadius != 0 && weapon.Data.SplashAngle != 0)
@@ -265,17 +255,6 @@ namespace Aura.Channel.Skills.Combat
 							{
 								aAction.Set(AttackerOptions.KnockBackHit1);
 								tSplashAction.Set(TargetOptions.Finished);
-							}
-							else
-							{
-								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
-								{
-									//Timer for getting back up.
-									System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun - 1000);
-
-									getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
-									getUpTimer.Enabled = true;
-								}
 							}
 
 							cap.Add(tSplashAction);

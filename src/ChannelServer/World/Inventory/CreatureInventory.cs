@@ -396,28 +396,35 @@ namespace Aura.Channel.World.Inventory
 		// ------------------------------------------------------------------
 
 		/// <summary>
-		/// Used from MoveItem handler.
+		/// Checks if the player made a valid Move.
 		/// </summary>
-		/// <remarks>
-		/// The item is the one that's interacted with, the one picked up
-		/// when taking it, the one being put into a packet when it's one
-		/// the cursor. Colliding items switch places with it.
-		/// </remarks>
-		/// <param name="item">Item to move</param>
-		/// <param name="target">Pocket to move it to</param>
-		/// <param name="targetX"></param>
-		/// <param name="targetY"></param>
 		/// <returns></returns>
-		public bool Move(Item item, Pocket target, byte targetX, byte targetY)
+		public bool CheckPlayerMove(Item item, Pocket target)
 		{
-			if (!this.Has(target))
-				return false;
-
-			if (target.IsEquip())
+			if (target.IsEquip())  //If the trying to place in an equipment pocket...
 			{
-				if (item.Durability == 0 && item.OptionInfo.DurabilityOriginal != 0)
+				if (item.Durability == 0 && item.OptionInfo.DurabilityOriginal != 0) //Durability must be above 0, or the original durability must be 0 (like Magic Powder).
 					return false;
-				if ((target == Pocket.Face || target == Pocket.Hair))
+				//No point in trying to equip a non-equip!
+				if (!item.HasTag("/equip/") && !item.HasTag("/deco_equip/"))
+					return false;
+
+				//Don't allow style-only clothing in the regular equip section.
+				if ((target == Pocket.Accessory1
+					|| target == Pocket.Accessory2
+					|| target == Pocket.Armor
+					|| target == Pocket.Glove
+					|| target == Pocket.Head
+					|| target == Pocket.Magazine1
+					|| target == Pocket.Magazine2
+					|| target == Pocket.RightHand1
+					|| target == Pocket.RightHand2
+					|| target == Pocket.Robe
+					|| target == Pocket.Shoe) && !item.HasTag("/equip/"))
+				{ return false; }
+
+				//Check that the tags match with the slots.
+				if ((target == Pocket.Face || target == Pocket.Hair)) //No moving to the face or hair slot!
 					return false;
 				if ((target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) && !item.HasTag("/lefthand/") && !item.HasTag("/twin_sword/") && !item.HasTag("/blunt/")) //Check for Giant for blunts below.
 					return false;
@@ -431,6 +438,7 @@ namespace Aura.Channel.World.Inventory
 					return false;
 				if ((target == Pocket.Head || target == Pocket.HeadStyle) && !item.HasTag("/head/"))
 					return false;
+				//Make sure the magazine is of the right type...
 				if ((target == Pocket.Magazine1 || target == Pocket.Magazine2)
 					&& (
 					RightHand == null
@@ -450,56 +458,59 @@ namespace Aura.Channel.World.Inventory
 				if ((target == Pocket.Shoe || target == Pocket.ShoeStyle) && !item.HasTag("/foot/"))
 					return false;
 
-				if ((target == Pocket.Accessory1
-					|| target == Pocket.Accessory2
-					|| target == Pocket.Armor
-					|| target == Pocket.Glove
-					|| target == Pocket.Head
-					|| target == Pocket.Magazine1
-					|| target == Pocket.Magazine2
-					|| target == Pocket.RightHand1 
-					|| target == Pocket.RightHand2 
-					|| target == Pocket.Robe 
-					|| target == Pocket.Shoe) && !item.HasTag("/equip/"))
-					{ return false; }
-				if ((target == Pocket.ArmorStyle
-					|| target == Pocket.GloveStyle
-					|| target == Pocket.HeadStyle
-					|| target == Pocket.RobeStyle
-					|| target == Pocket.ShoeStyle) && !item.HasTag("/equip/") && !item.HasTag("/deco_equip/"))
-				{ return false; }
-
-
-				if (!item.HasTag("/equip/"))
-					return false;
-				if  (_creature.IsElf && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
+				//Elves can't dual wield!
+				if (_creature.IsElf && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
 							item.Data.Type == ItemType.Weapon ||
 							item.Data.Type == ItemType.Weapon2 ||
 							item.Data.Type == ItemType.Weapon2H
 						)
-					){ return false; }
+					)
+				{ return false; }
 
+				//Giants can't dual wield anything but blunts!
 				if (_creature.IsGiant && (target == Pocket.LeftHand1 || target == Pocket.LeftHand2 || target == Pocket.Magazine1 || target == Pocket.Magazine2) &&
 						(
 							(item.Data.Type == ItemType.Weapon ||
 							item.Data.Type == ItemType.Weapon2 ||
 							item.Data.Type == ItemType.Weapon2H) && !item.Data.HasTag("/weapon/blunt/")
 						)
-					){ return false; }
+					)
+				{ return false; }
 
+				//Check for the correct race.
 				if (!_creature.IsGiant && item.Data.HasTag("/giant_only/"))
 					return false;
 				if (!_creature.IsHuman && item.Data.HasTag("/human_only/"))
 					return false;
 				if (!_creature.IsElf && item.Data.HasTag("/elf_only/"))
 					return false;
-
 				if (!_creature.IsHuman && !_creature.IsGiant && item.Data.HasTag("/human_giant_only/"))
 					return false;
 				if (!_creature.IsHuman && !_creature.IsElf && item.Data.HasTag("/human_elf_only/"))
 					return false;
 			}
+			return true;
+		}
+
+		/// <summary>
+		/// Used from MoveItem handler.
+		/// </summary>
+		/// <remarks>
+		/// The item is the one that's interacted with, the one picked up
+		/// when taking it, the one being put into a packet when it's one
+		/// the cursor. Colliding items switch places with it.
+		/// </remarks>
+		/// <param name="item">Item to move</param>
+		/// <param name="target">Pocket to move it to</param>
+		/// <param name="targetX"></param>
+		/// <param name="targetY"></param>
+		/// <returns></returns>
+		public bool Move(Item item, Pocket target, byte targetX, byte targetY)
+		{
+			if (!this.Has(target))
+				return false;
+
 			var source = item.Info.Pocket;
 			var amount = item.Info.Amount;
 
@@ -1135,6 +1146,32 @@ namespace Aura.Channel.World.Inventory
 			this.CheckEquipMoved(item, source, target);
 		}
 
+		private bool AddWithFallback(Item item, Pocket source)
+		{
+			// Switch item
+			var success = _pockets[source].Add(item);
+
+			// Fallback, VIP inv
+			if (!success)
+				success = _pockets[Pocket.VIPInventory].Add(item);
+
+			// Fallback, extra bags
+			for (var i = Pocket.ItemBags; i <= Pocket.ItemBagsMax; ++i)
+			{
+				if (success)
+					break;
+
+				if (_pockets.ContainsKey(i))
+					success = _pockets[i].Add(item);
+			}
+
+			// Fallback, temp inv
+			if (!success)
+				success = _pockets[Pocket.Temporary].Add(item);
+
+			return success;
+		}
+
 		/// <summary>
 		/// Makes sure you can't combine invalid equipment, like 2H and shields.
 		/// </summary>
@@ -1149,25 +1186,7 @@ namespace Aura.Channel.World.Inventory
 			if (target == this.LeftHandPocket && item.IsShieldLike && (rightItem != null && rightItem.IsTwoHand))
 			{
 				// Switch item
-				var success = _pockets[source].Add(rightItem);
-
-				// Fallback, VIP inv
-				if (!success)
-					success = _pockets[Pocket.VIPInventory].Add(rightItem);
-
-				// Fallback, extra bags
-				for (var i = Pocket.ItemBags; i <= Pocket.ItemBagsMax; ++i)
-				{
-					if (success)
-						break;
-
-					if (_pockets.ContainsKey(i))
-						success = _pockets[i].Add(item);
-				}
-
-				// Fallback, temp inv
-				if (!success)
-					success = _pockets[Pocket.Temporary].Add(rightItem);
+				var success = AddWithFallback(rightItem, source);
 
 				if (success)
 				{
@@ -1216,8 +1235,6 @@ namespace Aura.Channel.World.Inventory
 			if (pocketOfInterest == Pocket.None)
 				return;
 
-			
-
 			// Check LeftHand first, switch to Magazine if it's empty
 			var leftPocket = pocketOfInterest + 2; // Left Hand 1/2
 			var leftItem = _pockets[leftPocket].GetItemAt(0, 0);
@@ -1232,31 +1249,13 @@ namespace Aura.Channel.World.Inventory
 			}
 
 			if (!item.IsTwoHand
-				&& !(!leftItem.IsShieldLike)
+				&& leftItem.IsShieldLike
 				) //Only unequip left hand if item is two handed, or the left hand item is not a shield/shield-like while trying to equip anything.
-            { return; }
+			{ return; }
 
 			// Try inventory first.
 			// TODO: List of pockets stuff can be auto-moved to.
-			var success = _pockets[Pocket.Inventory].Add(leftItem);
-
-			// Fallback, VIP inv
-			if (!success)
-				success = _pockets[Pocket.VIPInventory].Add(leftItem);
-
-			// Fallback, extra bags
-			for (var i = Pocket.ItemBags; i <= Pocket.ItemBagsMax; ++i)
-			{
-				if (success)
-					break;
-
-				if (_pockets.ContainsKey(i))
-					success = _pockets[i].Add(item);
-			}
-
-			// Fallback, temp inv
-			if (!success)
-				success = _pockets[Pocket.Temporary].Add(leftItem);
+			var success = AddWithFallback(leftItem, Pocket.Inventory);
 
 			if (success)
 			{
@@ -1365,11 +1364,8 @@ namespace Aura.Channel.World.Inventory
 			if (!this.Has(item))
 				return;
 
+			_creature.UpdateTool(item, amount);
 			item.OptionInfo.Durability = Math.Max(0, item.OptionInfo.Durability - amount);
-			if(item.Durability == 0)
-			{
-				Send.Notice(_creature, Localization.Get("The durability of ") + Localization.Get(item.Data.Name) + Localization.Get(" has reached 0."));
-			}
 			Send.ItemDurabilityUpdate(_creature, item);
 		}
 	}

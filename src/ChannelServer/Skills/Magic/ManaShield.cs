@@ -32,9 +32,10 @@ namespace Aura.Channel.Skills.Magic
 		/// <returns></returns>
 		public override StartStopResult Start(Creature creature, Skill skill, MabiDictionary dict)
 		{
+			//Failure if preparing a skill, stunned, or knocked down.
 			if (creature.Skills.ActiveSkill != null && creature.Skills.ActiveSkill.State == SkillState.None || creature.IsStunned || creature.IsKnockedDown)
 			{
-				return StartStopResult.Okay;
+				return StartStopResult.Fail;
 			}
 			creature.Conditions.Activate(ConditionsA.ManaShield);
 			Send.Effect(creature, Effect.ManaShield);
@@ -83,7 +84,7 @@ namespace Aura.Channel.Skills.Magic
 			if (magic)
 			{
 				manaDamage = maxDamage / manaShield.RankData.Var1;
-                SkillHelper.HandleMagicDefenseProtection(target, ref manaDamage, false, true);
+				SkillHelper.HandleMagicDefenseProtection(target, ref manaDamage, false, true);
 			}
 			else
 			{
@@ -101,7 +102,7 @@ namespace Aura.Channel.Skills.Magic
 				manaDamage = target.Mana;
 				damage = Math.Max(1f, damage - manaDamage);
 			}
-			if(damage <= 0 && target.Life <= 0 && killWhileDeadly)
+			if (damage <= 0 && target.Life <= 0 && killWhileDeadly)
 			{
 				damage = 1;
 			}

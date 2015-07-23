@@ -721,37 +721,6 @@ namespace Aura.Channel.World
 			return this.GetCreatures(a => a != entity && a.GetPosition().InRange(entity.GetPosition(), range) && !a.Conditions.Has(ConditionsA.Invisible));
 		}
 
-		public List<Creature> GetVisibleCreaturesInRangeUsingHitbox(Creature creature, int range = VisibleRange)
-		{
-			_creaturesRWLS.EnterReadLock();
-			try
-			{
-				return _creatures.Values.Where(a => a != creature && a.GetPosition().InRange(creature.GetPosition(), Math.Max(25, range+(int)(Math.Max(creature.RaceData.AttackRange * creature.BodyScale / 2, a.RaceData.AttackRange * a.BodyScale / 2) / 2))) && !a.Conditions.Has(ConditionsA.Invisible)).ToList();
-			}
-			finally
-			{
-				_creaturesRWLS.ExitReadLock();
-			}
-		}
-
-		public List<Creature> GetVisibleCreaturesInCone(Creature creature, int radius, int angle)
-		{
-			_creaturesRWLS.EnterReadLock();
-			try
-			{
-				return _creatures.Values.Where(a =>
-				{
-					var targetPosition = a.GetPosition();
-					var creaturePosition = creature.GetPosition();
-					return a != creature && targetPosition.InRange(creaturePosition, radius) && Mabi.MabiMath.Vector2.IsPointInsideCone(new Mabi.MabiMath.Vector2(creaturePosition.X, creaturePosition.Y), Mabi.MabiMath.ByteToDirection(creature.Direction), new Mabi.MabiMath.Vector2(targetPosition.X, targetPosition.Y), Mabi.MabiMath.DegreeToRadian(angle), radius) && !a.Conditions.Has(ConditionsA.Invisible);
-                }).ToList();
-			}
-			finally
-			{
-				_creaturesRWLS.ExitReadLock();
-			}
-		}
-
 		/// <summary>
 		///  Spawns prop, sends EntityAppears.
 		/// </summary>

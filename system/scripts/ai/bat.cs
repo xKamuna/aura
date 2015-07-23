@@ -10,8 +10,6 @@ public class BatAi : AiScript
 	public BatAi()
 	{
 		Doubts("/pc/", "/pet/");
-		
-		UseAlertOnSplashHit();
 
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 		On(AiState.Aggro, AiEvent.KnockDown, OnKnockDown);

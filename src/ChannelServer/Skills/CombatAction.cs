@@ -14,6 +14,7 @@ using Aura.Shared.Util;
 using Aura.Channel.Skills.Life;
 using Aura.Channel.Skills.Base;
 using Aura.Data;
+using System.Timers;
 
 namespace Aura.Channel.Skills
 {
@@ -161,7 +162,7 @@ namespace Aura.Channel.Skills
 								action.Creature.Skills.CancelActiveSkill();
 							}
 							else
-							{ 
+							{
 								// Cancel non stackable skills on hit, wait for a
 								// knock back for stackables
 								if (action.Creature.Skills.ActiveSkill.RankData.StackMax > 1)
@@ -205,11 +206,19 @@ namespace Aura.Channel.Skills
 						{
 							tAction.Creature.NotReadyToBeHitTime = DateTime.Now.AddMilliseconds(tAction.Stun);
 						}
+						if (!tAction.Creature.IsDead)
+						{
+							//Timer for getting back up.
+							System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && tAction.Creature.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
+
+							getUpTimer.Elapsed += (sender, e) => { if (tAction.Creature != null) { tAction.Creature.GetBackUp(sender, e, getUpTimer); } };
+							getUpTimer.Enabled = true;
+						}
 					}
-					if(tAction.Creature.WasKnockedBack)
+					if (tAction.Creature.WasKnockedBack)
 					{
 						tAction.Creature.LastKnockedBackBy = this.Attacker;
-                    }
+					}
 
 					// Stability meter
 					// TODO: Limit it to "targetees"?

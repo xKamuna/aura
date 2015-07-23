@@ -217,17 +217,6 @@ namespace Aura.Channel.Skills.Combat
 					else if (target.Stability < 30)
 					{
 						tAction.Set(TargetOptions.KnockDown);
-						if (!target.IsDead)
-						{
-							if ((TargetOptions.KnockDown & tAction.Options) != 0)
-							{
-								//Timer for getting back up.
-								System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && target.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
-
-								getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-								getUpTimer.Enabled = true;
-							}
-						}
 					}
 					// Normal stability reduction
 					else

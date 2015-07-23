@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Aura.Channel.Skills.Combat
 {
@@ -70,37 +71,11 @@ namespace Aura.Channel.Skills.Combat
 			creature.Temp.FinalHitKillCountAwful = 0;
 			creature.Temp.FinalHitKillCountBoss = 0;
 
-			double duration = 1;
-			if (skill.Info.Rank < SkillRank.RD)
-			{
-				duration = 20000;
-			}
-			else if (skill.Info.Rank < SkillRank.RA)
-			{
-				duration = 24000;
-			}
-			else if (skill.Info.Rank < SkillRank.R7)
-			{
-				duration = 28000;
-			}
-			else if (skill.Info.Rank < SkillRank.R4)
-			{
-				duration = 32000;
-			}
-			else if (skill.Info.Rank < SkillRank.R1)
-			{
-				duration = 36000;
-			}
-			else
-			{
-				duration = 40000;
-			}
-
-			
+			double duration = skill.RankData.Var1 * 1000; //Convert seconds to milliseconds.
 
 			if (creature != null && (creature.Client == null || !(creature.Client.Account != null && creature.Client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))))
 			{
-				System.Timers.Timer durationTimer = new System.Timers.Timer(duration);
+				Timer durationTimer = new Timer(duration);
 
 				durationTimer.Elapsed +=
 				(sender, e) =>
@@ -119,7 +94,6 @@ namespace Aura.Channel.Skills.Combat
 				};
 				durationTimer.Enabled = true;
 			}
-			
 
 			Send.Effect(creature, Effect.FinalHit, (byte)1, (byte)1);
 			Send.SkillReady(creature, skill.Info.Id);
@@ -171,7 +145,7 @@ namespace Aura.Channel.Skills.Combat
 			var attackResult = false;
 
 			var target = creature.Region.GetCreature(targetEntityId);
-			if (target != null && !creature.IsStunned &&  !creature.IsOnAttackDelay && creature.CanTarget(target) && creature.CanAttack(target))
+			if (target != null && !creature.IsStunned && !creature.IsOnAttackDelay && creature.CanTarget(target) && creature.CanAttack(target))
 			{
 				var pos = creature.GetPosition();
 				var targetPos = target.GetPosition();
@@ -230,257 +204,257 @@ namespace Aura.Channel.Skills.Combat
 			}
 
 			var attackerSkill = tAction.Attacker.Skills.Get(SkillId.FinalHit);
-			if (attackerSkill != null)
+			if (attackerSkill == null)
+				return;
+			if (attackerSkill.Info.Rank >= SkillRank.RF && attackerSkill.Info.Rank <= SkillRank.RE)
 			{
-				if (attackerSkill.Info.Rank >= SkillRank.RF && attackerSkill.Info.Rank <= SkillRank.RE)
+				if (tAction.Creature.IsDead)
 				{
-					if (tAction.Creature.IsDead)
-					{
-						attackerSkill.Train(1);
+					attackerSkill.Train(1);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(2);
-					}
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
+						attackerSkill.Train(2);
+				}
 
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 2)
-					{
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 2)
+				{
+					attackerSkill.Train(3);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (attackerSkill.Info.Rank == SkillRank.RE && tAction.Attacker.Temp.FinalHitKillCountStrong >= 2)
+				{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank == SkillRank.RD)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					attackerSkill.Train(1);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
+						attackerSkill.Train(2);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
 						attackerSkill.Train(3);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (attackerSkill.Info.Rank == SkillRank.RE && tAction.Attacker.Temp.FinalHitKillCountStrong >= 2)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
 				}
 
-				if (attackerSkill.Info.Rank == SkillRank.RD)
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 2)
 				{
-					if (tAction.Creature.IsDead)
-					{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 2)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 2)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank >= SkillRank.RC && attackerSkill.Info.Rank <= SkillRank.RA)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					attackerSkill.Train(1);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
+						attackerSkill.Train(2);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(3);
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 3)
+				{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 3)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 3)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank == SkillRank.R9)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					attackerSkill.Train(1);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
+						attackerSkill.Train(2);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(3);
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
+				{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank == SkillRank.R9)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					attackerSkill.Train(1);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
+						attackerSkill.Train(2);
+
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(3);
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
+				{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank >= SkillRank.R8 && attackerSkill.Info.Rank <= SkillRank.R7)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
 						attackerSkill.Train(1);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(2);
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(2);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 2)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 2)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 2)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
+						attackerSkill.Train(3);
 				}
 
-				if (attackerSkill.Info.Rank >= SkillRank.RC && attackerSkill.Info.Rank <= SkillRank.RA)
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
 				{
-					if (tAction.Creature.IsDead)
-					{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank >= SkillRank.R6 && attackerSkill.Info.Rank <= SkillRank.R4)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
 						attackerSkill.Train(1);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(2);
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(2);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 3)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 3)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 3)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
+						attackerSkill.Train(3);
 				}
 
-				if (attackerSkill.Info.Rank == SkillRank.R9)
+				if (tAction.Attacker.Temp.FinalHitKillCount >= 5)
 				{
-					if (tAction.Creature.IsDead)
-					{
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCount = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 5)
+				{
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
+				}
+
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 5)
+				{
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
+				}
+			}
+
+			if (attackerSkill.Info.Rank >= SkillRank.R3 && attackerSkill.Info.Rank <= SkillRank.R1)
+			{
+				if (tAction.Creature.IsDead)
+				{
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
 						attackerSkill.Train(1);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(2);
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
+						attackerSkill.Train(2);
 
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
+						attackerSkill.Train(3);
 				}
 
-				if (attackerSkill.Info.Rank == SkillRank.R9)
+				if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 5)
 				{
-					if (tAction.Creature.IsDead)
-					{
-						attackerSkill.Train(1);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(2);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					attackerSkill.Train(4);
+					tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
 				}
 
-				if (attackerSkill.Info.Rank >= SkillRank.R8 && attackerSkill.Info.Rank <= SkillRank.R7)
+				if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 5)
 				{
-					if (tAction.Creature.IsDead)
-					{
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(1);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(2);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 4)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 4)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 4)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					attackerSkill.Train(5);
+					tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
 				}
 
-				if (attackerSkill.Info.Rank >= SkillRank.R6 && attackerSkill.Info.Rank <= SkillRank.R4)
+				if (tAction.Attacker.Temp.FinalHitKillCountBoss >= 5)
 				{
-					if (tAction.Creature.IsDead)
-					{
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(1);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(2);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCount >= 5)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCount = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 5)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 5)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
+					attackerSkill.Train(6);
+					tAction.Attacker.Temp.FinalHitKillCountBoss = 0;
 				}
-
-				if (attackerSkill.Info.Rank >= SkillRank.R3 && attackerSkill.Info.Rank <= SkillRank.R1)
-				{
-					if (tAction.Creature.IsDead)
-					{
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Strong)
-							attackerSkill.Train(1);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Awful)
-							attackerSkill.Train(2);
-
-						if (tAction.Attacker.GetPowerRating(tAction.Creature) == PowerRating.Boss)
-							attackerSkill.Train(3);
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountStrong >= 5)
-					{
-						attackerSkill.Train(4);
-						tAction.Attacker.Temp.FinalHitKillCountStrong = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountAwful >= 5)
-					{
-						attackerSkill.Train(5);
-						tAction.Attacker.Temp.FinalHitKillCountAwful = 0;
-					}
-
-					if (tAction.Attacker.Temp.FinalHitKillCountBoss >= 5)
-					{
-						attackerSkill.Train(6);
-						tAction.Attacker.Temp.FinalHitKillCountBoss = 0;
-					}
-				}
+				
 			}
 		}
 	}

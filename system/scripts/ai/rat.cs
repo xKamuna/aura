@@ -9,7 +9,7 @@ public class RatAi : AiScript
 {
 	public RatAi()
 	{
-		//Hates("/pc/", "/pet/");
+		Doubts("/pc/", "/pet/");
 
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 		On(AiState.Aggro, AiEvent.KnockDown, OnKnockDown);

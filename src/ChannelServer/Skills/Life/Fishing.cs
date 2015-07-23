@@ -162,10 +162,7 @@ namespace Aura.Channel.Skills.Life
 				if (creature.RightHand.IsBlessed)
 					reduce = Math.Max(1, reduce / 2);
 
-				if (creature.RightHand.Durability > 0 && creature.RightHand.Durability - reduce <= 0)
-				{
-					Send.Notice(creature, Localization.Get("The durability of ") + Localization.Get(creature.RightHand.Data.Name) + Localization.Get(" has reached 0."));
-				}
+				creature.UpdateTool(creature.RightHand, reduce);
 
 				creature.RightHand.Durability -= reduce;
 				Send.ItemDurabilityUpdate(creature, creature.RightHand);

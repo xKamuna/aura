@@ -70,7 +70,8 @@ namespace Aura.Channel.World.Entities
 			this.GiftWeights = new GiftWeightInfo();
 			this.Greetings = new SortedList<int, List<string>>();
 
-			AttackFilter.Add(CreatureStates.Npc);
+			this.AttackFilter.Add(CreatureStates.Npc);
+			this.AttackOverride.Add(CreatureStates.GoodNpc);
 		}
 
 		/// <summary>
@@ -255,22 +256,6 @@ namespace Aura.Channel.World.Entities
 		/// <param name="from"></param>
 		/// <param name="lifeBefore"></param>
 		/// <returns></returns>
-		protected override bool ShouldSurvive(float damage, Creature from, float lifeBefore)
-		{
-			// No surviving once you're in deadly
-			if (lifeBefore < 0)
-				return false;
-
-			if (!ChannelServer.Instance.Conf.World.DeadlyNpcs)
-				return false;
-
-			// Chance = Will/10, capped at 50%
-			// (i.e 80 Will = 8%, 500+ Will = 50%)
-			// Actual formula unknown
-			// Added life proximity to the formula.
-			var chance = Math.Min(50, this.Will / 10 + (LifeMax > 0 ? ((this.Life / this.LifeMax) * 10) : 0));
-			return (RandomProvider.Get().Next(101) < chance);
-		}
 
 		/// <summary>
 		/// Returns how well the NPC remembers the other creature.

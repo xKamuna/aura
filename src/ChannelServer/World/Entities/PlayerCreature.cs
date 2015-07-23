@@ -91,8 +91,9 @@ namespace Aura.Channel.World.Entities
 		{
 			this.Watching = true;
 			this.UseBattleStanceFromAOE = true;
-			AttackFilter.Add("/pc/");
-			AttackFilter.Add("/pet/");
+			this.AttackFilter.Add(CreatureStates.GoodNpc);
+			this.AttackFilter.Add("/pc/");
+			this.AttackFilter.Add("/pet/");
 		}
 
 		/// <summary>
@@ -224,12 +225,13 @@ namespace Aura.Channel.World.Entities
 		/// <returns></returns>
 		protected override bool ShouldSurvive(float damage, Creature from, float lifeBefore)
 		{
-			// No surviving once you're in deadly
-			if (lifeBefore < 0)
-				return false;
 
 			if (lifeBefore >= this.LifeMax / 2)
 				return true;
+			else if (lifeBefore < 0) //No surviving once you're in deadly
+				return false;
+
+
 
 			// Chance = Will/10, capped at 50%
 			// (i.e 80 Will = 8%, 500+ Will = 50%)
@@ -323,7 +325,7 @@ namespace Aura.Channel.World.Entities
 		public override void Aggro(Creature target, bool alert = false)
 		{
 			this.IsInBattleStance = true;
-			if(this.Target == null)
+			if (this.Target == null)
 			{
 				this.Target = target;
 				Send.SetCombatTarget(this, target.EntityId, TargetMode.Normal);

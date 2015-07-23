@@ -61,7 +61,6 @@ namespace Aura.Channel.Scripting.Scripts
 		protected Dictionary<string, string> _hateTags, _loveTags, _doubtTags;
 		protected bool _hatesBattleStance;
 		protected int _maxDistanceFromSpawn;
-		protected bool _useAlertOnSplashHit;
 		protected bool _useBattleStanceFromAOE;
 
 		/// <summary>
@@ -176,7 +175,7 @@ namespace Aura.Channel.Scripting.Scripts
 		{
 			this.Creature = creature;
 			this.Creature.UseBattleStanceFromAOE = _useBattleStanceFromAOE;
-            this.Creature.Death += OnDeath;
+			this.Creature.Death += OnDeath;
 		}
 
 		/// <summary>
@@ -211,7 +210,7 @@ namespace Aura.Channel.Scripting.Scripts
 
 				this.SelectState();
 
-				if(this.Creature.IsKnockedDown || this.Creature.WasKnockedBack)
+				if (this.Creature.IsKnockedDown || this.Creature.WasKnockedBack)
 				{
 					this.Creature.AttemptingAttack = true;
 				}
@@ -244,11 +243,11 @@ namespace Aura.Channel.Scripting.Scripts
 					{
 						switch (_state)
 						{
-							default:
-							case AiState.Idle: this.SwitchAction(Idle); break;
-							case AiState.Alert: this.SwitchAction(Alert); break;
-							case AiState.Aggro: this.SwitchAction(Aggro); break;
-							case AiState.Love: this.SwitchAction(Love); break;
+						default:
+						case AiState.Idle: this.SwitchAction(Idle); break;
+						case AiState.Alert: this.SwitchAction(Alert); break;
+						case AiState.Aggro: this.SwitchAction(Aggro); break;
+						case AiState.Love: this.SwitchAction(Love); break;
 						}
 						this.Creature.AttemptingAttack = false;
 						_curAction.MoveNext();
@@ -289,7 +288,6 @@ namespace Aura.Channel.Scripting.Scripts
 				this.Creature.IsInBattleStance = false;
 				this.Creature.AttemptingAttack = false;
 			}
-			
 
 			if (this.Creature.Target != null)
 			{
@@ -361,10 +359,10 @@ namespace Aura.Channel.Scripting.Scripts
 			//   noticed a cow.
 
 			// Reset on...
-			if (this.Creature.Target.IsDead																 // target dead
-			|| !this.Creature.GetPosition().InRange(this.Creature.Target.GetPosition(), _aggroMaxRadius) // out of aggro range
-			|| this.Creature.Target.Client.State == ClientState.Dead									 // target disconnected
-			|| (_state != AiState.Aggro && this.Creature.Target.Conditions.Has(ConditionsA.Invisible))	 // target hid before reaching aggro state
+			if (this.Creature.Target.IsDead                                                              // target dead
+				|| !this.Creature.GetPosition().InRange(this.Creature.Target.GetPosition(), _aggroMaxRadius) // out of aggro range
+				|| this.Creature.Target.Client.State == ClientState.Dead                                     // target disconnected
+				|| (_state != AiState.Aggro && this.Creature.Target.Conditions.Has(ConditionsA.Invisible))   // target hid before reaching aggro state
 			)
 			{
 				this.Reset();
@@ -738,31 +736,17 @@ namespace Aura.Channel.Scripting.Scripts
 		/// <param name="creature"></param>
 		public void AggroCreature(Creature creature, bool alert = false)
 		{
-			_state = AiState.Aggro;
+			_state = alert ? AiState.Alert : AiState.Aggro;
 			this.Clear();
-			if (!alert || alert && _useAlertOnSplashHit)
-			{
-				this.Creature.IsInBattleStance = true;
-				this.Creature.Target = creature;
-				Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
-			}
-			else if(this.Creature.IsInBattleStance)
-			{
-				this.Creature.IsInBattleStance = false;
-				this.Creature.Target = null;
-				Send.SetCombatTarget(this.Creature, 0, TargetMode.Normal);
-			}
-		}
-
-		public void UseAlertOnSplashHit(bool alert = true)
-		{
-			_useAlertOnSplashHit = alert;
+			this.Creature.IsInBattleStance = true;
+			this.Creature.Target = creature;
+			Send.SetCombatTarget(this.Creature, this.Creature.Target.EntityId, alert ? TargetMode.Alert : TargetMode.Aggro);
 		}
 
 		public void UseBattleStanceFromAOE(bool use = true)
 		{
 			_useBattleStanceFromAOE = use;
-			if(this.Creature != null)
+			if (this.Creature != null)
 				this.Creature.UseBattleStanceFromAOE = use;
 		}
 
@@ -1052,7 +1036,7 @@ namespace Aura.Channel.Scripting.Scripts
 			var attackRange = this.Creature.AttackRangeFor(this.Creature.Target);
 
 			// Each successful hit counts, attack until count or timeout is reached.
-			for (int i = 0; ; )
+			for (int i = 0; ;)
 			{
 				// Stop timeout was reached
 				if (DateTime.Now >= timeoutDt)
@@ -1069,7 +1053,7 @@ namespace Aura.Channel.Scripting.Scripts
 				}
 				if (skillHandler2 != null)
 				{
-					skillHandler2.Use(this.Creature, skill, this.Creature.Target.EntityId, 0 , 0);
+					skillHandler2.Use(this.Creature, skill, this.Creature.Target.EntityId, 0, 0);
 					// Stop when max attack count is reached
 					this.Creature.AttemptingAttack = false;
 					if (++i >= count)
@@ -1111,14 +1095,14 @@ namespace Aura.Channel.Scripting.Scripts
 			// Handle completing of skill, if it hasn't been canceled
 			if (skill.Info.Id != SkillId.CombatMastery && this.Creature.Skills.ActiveSkill != null)
 			{
-				if(skillHandler2 != null)
+				if (skillHandler2 != null)
 				{
 					Send.Effect(this.Creature, Effect.FinalHit, (byte)0);
 				}
 				else
-				{ 
-				// Get handler
-				var completeHandler = skillHandler as ICompletable;
+				{
+					// Get handler
+					var completeHandler = skillHandler as ICompletable;
 					if (completeHandler == null)
 					{
 						if (skill.Info.Id != SkillId.FinalHit)

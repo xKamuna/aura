@@ -112,6 +112,29 @@ namespace Aura.Channel.Skills.Combat
 		/// <returns></returns>
 		public static bool Handle(AttackerAction aAction, TargetAction tAction, ref float damage, bool ranged = false)
 		{
+			if (!Handle(aAction, tAction, ranged))
+				return false;
+
+			var activeSkill = tAction.Creature.Skills.ActiveSkill;
+			// Reduce damage
+			var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
+			if (damage > shieldPassiveDefense)
+				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
+			damage = Math.Max(1, damage - activeSkill.RankData.Var3 - shieldPassiveDefense);
+
+			return true;
+		}
+
+		/// <summary>
+		/// Checks if target has Defense skill activated and makes the necessary
+		/// changes to the actions, stun times, and damage.
+		/// </summary>
+		/// <param name="aAction"></param>
+		/// <param name="tAction"></param>
+		/// <param name="damage"></param>
+		/// <returns></returns>
+		public static bool Handle(AttackerAction aAction, TargetAction tAction, bool ranged = false)
+		{
 			var activeSkill = tAction.Creature.Skills.ActiveSkill;
 			if (activeSkill == null || activeSkill.Info.Id != SkillId.Defense || activeSkill.State != SkillState.Ready)
 				return false;
@@ -124,12 +147,6 @@ namespace Aura.Channel.Skills.Combat
 			tAction.SkillId = SkillId.Defense;
 			tAction.Stun = DefenseTargetStun;
 			aAction.Stun = DefenseAttackerStun;
-
-			// Reduce damage
-			var shieldPassiveDefense = ranged ? (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusDefault : 0) : (tAction.Creature.LeftHand != null ? tAction.Creature.LeftHand.Data.DefenseBonusMeleePassive : 0);
-			if (damage > shieldPassiveDefense)
-				damage += shieldPassiveDefense; //Reverse the damage if it won't reduce to 0, so that we can apply the Defense version.
-			damage = Math.Max(1, damage - activeSkill.RankData.Var3 - shieldPassiveDefense);
 
 			// Updating unlock because of the updating lock for pre-renovation
 			// Other skills actually unlock automatically on the client,

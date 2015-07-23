@@ -648,7 +648,7 @@ namespace Aura.Channel.Database
 						{
 							if (!string.IsNullOrWhiteSpace(typeString))
 							{
-                                var assembly = typeof(SkillId).Assembly;
+								var assembly = typeof(SkillId).Assembly;
 								Type type = assembly.GetType(typeString);
 								if (type == null)
 								{

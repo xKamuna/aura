@@ -73,6 +73,9 @@ namespace Aura.Channel.Network.Handlers
 			if ((target >= Pocket.RightHand1 && target <= Pocket.Magazine2) || (source >= Pocket.RightHand1 && source <= Pocket.Magazine2))
 				creature.StopMove();
 
+			if (!creature.Inventory.CheckPlayerMove(item, target))
+				goto L_Fail;
+
 			// Try to move item
 			if (!creature.Inventory.Move(item, target, targetX, targetY))
 				goto L_Fail;

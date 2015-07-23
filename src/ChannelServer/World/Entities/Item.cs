@@ -611,7 +611,7 @@ namespace Aura.Channel.World.Entities
 				this.Data.HasTag("/weapon/pillow/") ||
 				this.Data.HasTag("/weapon/handle/") ||
 				this.Data.HasTag("/weapon/dreamcatcher/") ||
-				this.Data.HasTag("/weapon/gun/dualgun/")
+				this.Data.HasTag("/weapon/gun/")
 			)
 			{
 				switch (repairRate)

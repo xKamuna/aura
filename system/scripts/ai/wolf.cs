@@ -16,8 +16,6 @@ public class WolfAi : AiScript
 		Hates("/sheep/");
 		Hates("/dog/");
 		HatesBattleStance();
-
-		UseAlertOnSplashHit();
 		
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}

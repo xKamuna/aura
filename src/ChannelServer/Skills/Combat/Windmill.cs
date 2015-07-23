@@ -112,14 +112,14 @@ namespace Aura.Channel.Skills.Combat
 		public void Use(Creature attacker, Skill skill, long targetAreaId = 0, int unkInt1 = 0, int unkInt2 = 0)
 		{
 			bool wasKnockedDown = (attacker.IsKnockedDown || attacker.WasKnockedBack);
-            if ((attacker.Stun > 500 && wasKnockedDown || attacker.IsStunned && !wasKnockedDown || DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime && (wasKnockedDown)) && attacker.InterceptingSkillId == SkillId.None)
+			if ((attacker.Stun > 500 && wasKnockedDown || attacker.IsStunned && !wasKnockedDown || DateTime.Now.AddMilliseconds(2000) < attacker.AttackDelayTime && (wasKnockedDown)) && attacker.InterceptingSkillId == SkillId.None)
 			{
 				Send.SkillUseSilentCancel(attacker);
 				return;
 			}
 			var range = this.GetRange(attacker, skill);
 
-			var targets = attacker.GetTargetableCreaturesInRange(range, true);
+			ICollection<Creature> targets = attacker.GetTargetableCreaturesInRange(range, true).Where(t => !(DateTime.Now.AddMilliseconds(2000) < t.NotReadyToBeHitTime)).ToList(); //Able to be attacked at 1/3 of knock down time.
 
 			// Check targets
 			if (targets.Count == 0)
@@ -145,20 +145,6 @@ namespace Aura.Channel.Skills.Combat
 			foreach (var target in targets)
 			{
 				i++;
-				if ((DateTime.Now.AddMilliseconds(2000) < target.NotReadyToBeHitTime)) //Able to be attacked at 1/3 of knock down time.
-				{
-					skipped.Add(target);
-					if (skipped.Count == targets.Count)
-					{
-						Send.Notice(attacker, Localization.Get("There isn't a target nearby to use that on."));
-						Send.SkillUseSilentCancel(attacker);
-						return;
-					}
-					else
-					{
-						continue;
-					}
-				}
 
 				target.StopMove();
 
@@ -181,7 +167,7 @@ namespace Aura.Channel.Skills.Combat
 				tAction.Delay = 300; // Usually 300, sometimes 350?
 
 				// Calculate damage
-				var damage = attacker.GetRndTotalDamage();
+				float damage = 0f;
 				if (attacker.RightHand != null && (
 				attacker.RightHand.Data.HasTag("/weapon/bow01/") ||
 				attacker.RightHand.Data.HasTag("/weapon/bow/") ||
@@ -191,6 +177,10 @@ namespace Aura.Channel.Skills.Combat
 				attacker.RightHand.Data.HasTag("/weapon/gun/dualgun/")))
 				{
 					damage = attacker.GetRndBareHandDamage();
+				}
+				else
+				{
+					damage = attacker.GetRndTotalDamage();
 				}
 				damage *= skill.RankData.Var1 / 100f;
 
@@ -206,9 +196,9 @@ namespace Aura.Channel.Skills.Combat
 					// Set target option
 					tAction.Set(TargetOptions.Critical);
 				}
-				else if(i == 1)
+				else if (i == 1)
 				{
-					
+
 					CriticalHit.Handle(attacker, attacker.GetTotalCritChance(0), ref damage, tAction);
 					if (tAction.Has(TargetOptions.Critical))
 						allCrit = true;
@@ -234,11 +224,9 @@ namespace Aura.Channel.Skills.Combat
 
 				// Anger Management
 				if (!target.IsDead)
-				{
 					survived.Add(target);
-				}
 
-				if(target.UseBattleStanceFromAOE)
+				if (target.UseBattleStanceFromAOE)
 					target.IsInBattleStance = true;
 
 				// Stun & knock back
@@ -247,17 +235,6 @@ namespace Aura.Channel.Skills.Combat
 				if (!tAction.Is(CombatActionType.Defended))
 				{
 					tAction.Stun = CombatMastery.GetTargetStun(attacker.AverageKnockCount, attacker.AverageAttackSpeed, true);
-					if (!target.IsDead)
-					{
-						if ((TargetOptions.KnockDown & tAction.Options) != 0)
-						{
-							//Timer for getting back up.
-							System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && target.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
-
-							getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-							getUpTimer.Enabled = true;
-						}
-					}
 					target.Stability = Creature.MinStability;
 					attacker.Shove(target, KnockbackDistance);
 				}
@@ -335,7 +312,7 @@ namespace Aura.Channel.Skills.Combat
 				range = 400f;
 				knuckleMod = 0.5f;
 			}
-			
+
 
 			if (attacker.RightHand != null && attacker.RightHand.Data.HasTag("/weapon/knuckle/"))
 				range *= knuckleMod;

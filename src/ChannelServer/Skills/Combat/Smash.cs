@@ -107,7 +107,7 @@ namespace Aura.Channel.Skills.Combat
 
 			// Check range
 			var attackerPosition = attacker.GetPosition();
-            var targetPosition = target.GetPosition();
+			var targetPosition = target.GetPosition();
 			if (!attacker.IgnoreAttackRange &&
 				(!attackerPosition.InRange(targetPosition, attacker.AttackRangeFor(target))))
 			{ return CombatSkillResult.OutOfRange; }
@@ -151,8 +151,7 @@ namespace Aura.Channel.Skills.Combat
 
 			// Against Smash
 			Skill smash = target.Skills.Get(SkillId.Smash);
-			
-            if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned && attacker.CanAttack(target))
+			if (smash != null && target.Skills.IsReady(SkillId.Smash) && target.IsInBattleStance && target.Target == attacker && !target.IsStunned && attacker.CanAttack(target))
 			{
 				var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 				var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
@@ -186,8 +185,6 @@ namespace Aura.Channel.Skills.Combat
 			attacker.StopMove();
 			target.StopMove();
 
-			
-
 			target.IgnoreAttackRange = false;
 
 			// Counter
@@ -215,8 +212,6 @@ namespace Aura.Channel.Skills.Combat
 			// Prepare combat actions
 			var aAction = new AttackerAction(CombatActionType.HardHit, attacker, skill.Info.Id, targetEntityId);
 			aAction.Set(AttackerOptions.Result | AttackerOptions.KnockBackHit2);
-
-			
 
 			TargetAction tAction;
 			if (attacker.InterceptingSkillId == SkillId.Smash)
@@ -249,8 +244,6 @@ namespace Aura.Channel.Skills.Combat
 			// Mana Shield
 			ManaShield.Handle(target, ref damage, tAction, maxDamage);
 
-
-
 			// Apply damage
 			target.TakeDamage(tAction.Damage = damage, attacker);
 
@@ -264,15 +257,6 @@ namespace Aura.Channel.Skills.Combat
 			attacker.Stun = aAction.Stun = StunTime;
 			target.Stun = tAction.Stun = StunTime;
 			target.Stability = Creature.MinStability;
-
-			if (!target.IsDead)
-			{
-				//Timer for getting back up.
-				System.Timers.Timer getUpTimer = new System.Timers.Timer(tAction.Stun + AfterUseStun - 1000);
-
-				getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-				getUpTimer.Enabled = true;
-			}
 
 			// Set knockbacked position
 			attacker.Shove(target, KnockbackDistance);
@@ -296,32 +280,8 @@ namespace Aura.Channel.Skills.Combat
 						tSplashAction.Set(TargetOptions.Result | TargetOptions.Smash);
 
 						// Base damage
-						var damageSplash = this.GetDamage(attacker, skill);
-
-						//Splash Damage Reduction
-						damageSplash *= skill.Info.Rank < SkillRank.R1 ? 0.1f : 0.2f;
-
-						// Critical Hit
-
-						if (critSkill != null && tAction.Has(TargetOptions.Critical))
-						{
-							// Add crit bonus
-							var bonus = critSkill.RankData.Var1 / 100f;
-							damageSplash = damageSplash + (damageSplash * bonus);
-
-							// Set splashTarget option
-							tSplashAction.Set(TargetOptions.Critical);
-						}
-
-						var maxDamageSplash = damage; //Damage without Defense and Protection
-						// Subtract splashTarget def/prot
-						SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
-
-						// Defense
-						Defense.Handle(aAction, tSplashAction, ref damageSplash);
-
-						// Mana Shield
-						ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction, maxDamageSplash);
+						float damageSplash = this.GetDamage(attacker, skill);
+						attacker.CalculateSplashDamage(splashTarget, ref damageSplash, skill, critSkill, aAction, tAction, tSplashAction);
 
 						// Deal with it!
 						if (damageSplash > 0)
@@ -335,15 +295,6 @@ namespace Aura.Channel.Skills.Combat
 
 						splashTarget.Stun = tSplashAction.Stun = StunTime;
 						splashTarget.Stability = Creature.MinStability;
-
-						if (!splashTarget.IsDead)
-						{
-							//Timer for getting back up.
-							System.Timers.Timer getUpTimer = new System.Timers.Timer(tSplashAction.Stun + AfterUseStun - 1000);
-
-							getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
-							getUpTimer.Enabled = true;
-						}
 
 						// Set knockbacked position
 						attacker.Shove(splashTarget, KnockbackDistance);

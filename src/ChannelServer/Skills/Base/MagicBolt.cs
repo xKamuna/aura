@@ -154,8 +154,8 @@ namespace Aura.Channel.Skills.Base
 			var attackerPosition = attacker.GetPosition();
 
 			if (!attackerPosition.InRange(targetPosition, this.GetRange(attacker, skill)))
-			{ return CombatSkillResult.OutOfRange; }
-			if(attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
+				return CombatSkillResult.OutOfRange; 
+			if (attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
 				|| target.Conditions.Has(ConditionsA.Invisible)) // Check visiblility (GM)
 			{
 				return CombatSkillResult.Okay;
@@ -189,11 +189,10 @@ namespace Aura.Channel.Skills.Base
 
 			// Damage
 			var damage = this.GetDamage(attacker, skill);
-			var fakeDamage = 1f; //Just fake damage so that damage does not get negated.
 			var maxDamage = damage; //Damage without Defense and Protection
 			// Reduce damage
 			if (this.Defendable)
-				Defense.Handle(aAction, tAction, ref fakeDamage);
+				Defense.Handle(aAction, tAction);
 			SkillHelper.HandleMagicDefenseProtection(target, ref damage);
 			ManaShield.Handle(target, ref damage, tAction, maxDamage, true);
 

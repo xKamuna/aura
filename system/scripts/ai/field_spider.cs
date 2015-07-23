@@ -10,8 +10,6 @@ public class FieldSpiderAi : AiScript
 	public FieldSpiderAi()
 	{
 		Doubts("/pc/", "/pet/");
-		
-		UseAlertOnSplashHit();
 
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}

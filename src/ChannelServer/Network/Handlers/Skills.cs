@@ -85,17 +85,18 @@ namespace Aura.Channel.Network.Handlers
 
 			if (creature.CooldownManager.IsOnCooldown(skill))
 			{
-				if(client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
+				if (client.Account != null && client.Account.Authority >= 50 && (creature.Titles.SelectedTitle == 60000 || creature.Titles.SelectedTitle == 60001))
 				{
 					Send.SystemMessage(creature, Localization.Get("Cancelled skill cooldown."));
 					creature.CooldownManager.SetCooldown(skill, DateTime.Now);
 				}
 				else
 				{
+					Send.SkillStartSilentCancel(creature, skillId);
 					return; //Cancel if on cooldown.  Client sends its own message stating that the cooldown is not yet over.  Ignore if GM or devCAT title is on and account has proper authority.
 				}
 			}
-				
+
 
 			var handler = ChannelServer.Instance.SkillManager.GetHandler<IStartable>(skillId);
 			if (handler == null)
@@ -223,6 +224,7 @@ namespace Aura.Channel.Network.Handlers
 				}
 				else
 				{
+					Send.SkillStartSilentCancel(creature, skillId);
 					return; //Cancel if on cooldown.  Client sends its own message stating that the cooldown is not yet over.  Ignore if GM or devCAT title is on and account has proper authority.
 				}
 			}

@@ -10,8 +10,6 @@ public class SnakeAi : AiScript
 	public SnakeAi()
 	{
 		Hates("/pc/", "/pet/");
-
-		UseAlertOnSplashHit();
 		
 		UseBattleStanceFromAOE();
 

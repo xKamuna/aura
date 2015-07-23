@@ -12,8 +12,6 @@ public class FoxAi : AiScript
 		Doubts("/pc/", "/pet/");
 		Hates("/chicken/");
 		
-		UseAlertOnSplashHit();
-		
 		On(AiState.Aggro, AiEvent.DefenseHit, OnDefenseHit);
 	}
 

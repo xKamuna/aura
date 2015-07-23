@@ -87,10 +87,9 @@ namespace Aura.Channel.Skills.Magic
 				targetDamage -= (targetDamage * 0.1f) * i;
 
 				// Reduce damage
-				var fakeDamage = 1f; //Just fake damage so that damage does not get negated.
 				var maxDamage = damage; //Damage without Defense and Protection
 				// Reduce damage
-				Defense.Handle(aAction, tAction, ref fakeDamage);
+				Defense.Handle(aAction, tAction);
 				SkillHelper.HandleMagicDefenseProtection(target, ref targetDamage);
 				ManaShield.Handle(target, ref targetDamage, tAction, maxDamage, true);
 

@@ -110,7 +110,7 @@ namespace Aura.Channel.Skills.Combat
 				else
 				{
 					creature.CooldownManager.SetCooldown(skill, DateTime.Now.AddMilliseconds(skill.RankData.Var10));
-                }
+				}
 			}
 		}
 
@@ -191,13 +191,13 @@ namespace Aura.Channel.Skills.Combat
 			cap.Add(aAction, tAction);
 
 			float damage;
-			if(attacker.RightHand != null && attacker.RightHand.Data.HasTag("/weapon/gun/"))   //TODO: Only do this when out of ammo.
-            {
+			if (attacker.RightHand != null && attacker.RightHand.Data.HasTag("/weapon/gun/"))   //TODO: Only do this when out of ammo.
+			{
 				damage = (attacker.GetRndBareHandDamage() * (skill.RankData.Var2 / 100f)) +
 				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));
 			}
 			else
-            {
+			{
 				damage = (attacker.GetRndTotalDamage() * (skill.RankData.Var2 / 100f)) +
 				(target.GetRndTotalDamage() * (skill.RankData.Var1 / 100f));
 			}
@@ -218,8 +218,8 @@ namespace Aura.Channel.Skills.Combat
 			if (target.IsDead)
 				tAction.Options |= TargetOptions.FinishingKnockDown;
 
-			
-			if(attacker.IsCharacter && AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
+
+			if (attacker.IsCharacter && AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal"))
 			{
 				aAction.Stun = 2000;
 			}
@@ -228,15 +228,6 @@ namespace Aura.Channel.Skills.Combat
 				aAction.Stun = AttackStunTime;
 			}
 			tAction.Stun = StunTime;
-
-			if (!target.IsDead)
-			{
-					//Timer for getting back up.
-					System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && target.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
-
-					getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-					getUpTimer.Enabled = true;
-			}
 
 			target.Stability = Creature.MinStability;
 			attacker.Shove(target, KnockbackDistance);

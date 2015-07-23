@@ -84,7 +84,7 @@ namespace Aura.Channel.Network.Handlers
 				return;
 			}
 
-			
+
 
 			creature.Target = target;
 
@@ -122,9 +122,6 @@ namespace Aura.Channel.Network.Handlers
 			var unkString = packet.GetString();
 
 			var creature = client.GetCreatureSafe(packet.Id);
-
-			if (creature.IsDead)
-				return;
 
 			// Get skill
 			var skill = creature.Skills.ActiveSkill;
@@ -170,7 +167,7 @@ namespace Aura.Channel.Network.Handlers
 				&& skill.Info.Id != SkillId.FinalHit) //These combat skills handle stun separately, if possible.
 			{ goto L_End; }
 
-			
+
 
 			// Get handler
 			var skillHandler = ChannelServer.Instance.SkillManager.GetHandler<ISkillHandler>(skill.Info.Id);
@@ -198,7 +195,7 @@ namespace Aura.Channel.Network.Handlers
 					skill.State = SkillState.Used;
 
 					creature.Regens.Remove("ActiveSkillWait");
-                }
+				}
 				else if (result == CombatSkillResult.OutOfRange)
 				{
 					Send.CombatAttackR(creature, target);

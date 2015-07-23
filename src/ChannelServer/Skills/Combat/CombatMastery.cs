@@ -65,7 +65,7 @@ namespace Aura.Channel.Skills.Combat
 			if (!attacker.IgnoreAttackRange &&
 				(!attackerPosition.InRange(targetPosition, attacker.AttackRangeFor(target))))
 			{ return CombatSkillResult.OutOfRange; }
-			if(!attacker.IgnoreAttackRange && 
+			if (!attacker.IgnoreAttackRange &&
 				(attacker.Region.Collisions.Any(attackerPosition, targetPosition) // Check collisions between position
 				|| target.Conditions.Has(ConditionsA.Invisible))) // Check visiblility (GM)
 			{ return CombatSkillResult.Okay; }
@@ -81,7 +81,7 @@ namespace Aura.Channel.Skills.Combat
 			var leftWeapon = attacker.Inventory.LeftHand;
 			var dualWield = (rightWeapon != null && leftWeapon != null && leftWeapon.Data.WeaponType != 0 && (leftWeapon.HasTag("/weapon/edged/") || leftWeapon.HasTag("/weapon/blunt/")));
 
-			
+
 			var staminaUsage = (rightWeapon != null && rightWeapon.Data.StaminaUsage != 0 ? rightWeapon.Data.StaminaUsage : 0.7f) + (dualWield ? leftWeapon.Data.StaminaUsage : 0f);
 			var lowStamina = false;
 			if (attacker.Stamina < staminaUsage)
@@ -95,15 +95,15 @@ namespace Aura.Channel.Skills.Combat
 			// Against Combat Mastery
 			Skill combatMastery = target.Skills.Get(SkillId.CombatMastery);
 			var simultaneousAttackStun = 0;
-			if(attacker.InterceptingSkillId != SkillId.CombatMastery && target.InterceptingSkillId != SkillId.CombatMastery)
+			if (attacker.InterceptingSkillId != SkillId.CombatMastery && target.InterceptingSkillId != SkillId.CombatMastery)
 			{
 				if (combatMastery != null && (target.Skills.ActiveSkill == null || target.Skills.ActiveSkill == combatMastery || target.Skills.IsReady(SkillId.FinalHit)) && target.IsInBattleStance && target.Target == attacker && target.AttemptingAttack && (!target.IsStunned || target.IsKnockedDown) && attacker.CanAttack(target))
 				{
 					var attackerStunTime = CombatMastery.GetAttackerStun(attacker, attacker.RightHand, false);
 					var targetStunTime = CombatMastery.GetAttackerStun(target, target.Inventory.RightHand, false);
-					if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime && 
+					if ((target.LastKnockedBackBy == attacker && target.KnockDownTime > attacker.KnockDownTime &&
 						target.KnockDownTime.AddMilliseconds(targetStunTime) < DateTime.Now //If last knocked down within the time it takes for you to finish attacking.
-						|| attackerStunTime > targetStunTime && 
+						|| attackerStunTime > targetStunTime &&
 						!Math2.Probability(((2725 - attackerStunTime) / 2500) * 100) //Probability in percentage that you will not lose.  2725 is 2500 (Slowest stun) + 225 (Fastest stun divided by two so that the fastest stun isn't 100%)
 						&& !(attacker.LastKnockedBackBy == target && attacker.KnockDownTime > target.KnockDownTime && attacker.KnockDownTime.AddMilliseconds(attackerStunTime) < DateTime.Now)))
 					{
@@ -147,16 +147,12 @@ namespace Aura.Channel.Skills.Combat
 								}
 							}
 						}
-
 					}
 				}
 			}
 
-			
-
 			attacker.StopMove();
 			targetPosition = target.StopMove();
-
 
 			// Counter
 			if (Counterattack.Handle(target, attacker))
@@ -183,7 +179,6 @@ namespace Aura.Channel.Skills.Combat
 			var maxHits = (byte)(dualWield ? 2 : 1);
 			int prevId = 0;
 
-
 			var defenseStun = 0;
 			for (byte i = 1; i <= maxHits; ++i)
 			{
@@ -192,18 +187,17 @@ namespace Aura.Channel.Skills.Combat
 
 				AttackerAction aAction;
 				TargetAction tAction;
-				//Please note that the CombatActionType for the interception may be different from official servers.  Needs more research.
 				if (attacker.InterceptingSkillId == SkillId.Smash)
 				{
-					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
+					aAction = new AttackerAction(CombatActionType.SimultaneousHit, attacker, SkillId.CombatMastery, target.EntityId);
 					aAction.Options |= AttackerOptions.Result;
 					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, SkillId.Smash);
 					tAction.Options |= TargetOptions.Result;
-					
+
 				}
 				else if (attacker.InterceptingSkillId == SkillId.CombatMastery)
 				{
-					aAction = new AttackerAction(CombatActionType.RangeHit, attacker, SkillId.CombatMastery, target.EntityId);
+					aAction = new AttackerAction(CombatActionType.SimultaneousHit, attacker, SkillId.CombatMastery, target.EntityId);
 					aAction.Options |= AttackerOptions.Result;
 					tAction = new TargetAction(CombatActionType.CounteredHit, target, attacker, target.Skills.IsReady(SkillId.FinalHit) ? SkillId.FinalHit : SkillId.CombatMastery);
 					tAction.Options |= TargetOptions.Result;
@@ -232,28 +226,28 @@ namespace Aura.Channel.Skills.Combat
 
 				// Base damage
 				var damage = (i == 1 ? attacker.GetRndRightHandDamage() : attacker.GetRndLeftHandDamage());
-				if(lowStamina)
+				if (lowStamina)
 				{
 					damage = attacker.GetRndBareHandDamage();
-                }
+				}
 
 				// Critical Hit
 				var critShieldReduction = (target.LeftHand != null ? target.LeftHand.Data.DefenseBonusCrit : 0);
-                var critChance = (i == 1 ? attacker.GetRightCritChance(target.Protection + critShieldReduction) : attacker.GetLeftCritChance(target.Protection + critShieldReduction));
+				var critChance = (i == 1 ? attacker.GetRightCritChance(target.Protection + critShieldReduction) : attacker.GetLeftCritChance(target.Protection + critShieldReduction));
 				CriticalHit.Handle(attacker, critChance, ref damage, tAction);
 
 				var maxDamage = damage; //Damage without Defense and Protection
-				// Subtract target def/prot
+										// Subtract target def/prot
 				SkillHelper.HandleDefenseProtection(target, ref damage);
 
 				// Defense
 				var tActionOldType = tAction.Type;
 				Defense.Handle(aAction, tAction, ref damage);
-				if(i == 1 && tAction.Type == CombatActionType.Defended)
+				if (i == 1 && tAction.Type == CombatActionType.Defended)
 				{
 					defenseStun = tAction.Stun;
-                }
-				
+				}
+
 
 				// Mana Shield
 				ManaShield.Handle(target, ref damage, tAction, maxDamage);
@@ -265,12 +259,12 @@ namespace Aura.Channel.Skills.Combat
 				if (tAction.Type == CombatActionType.Defended && target.Life <= 0)
 				{
 					tAction.Type = tActionOldType;
-                }
+				}
 
 				// Aggro
 				target.Aggro(attacker);
 
-					// Evaluate caused damage
+				// Evaluate caused damage
 				if (!target.IsDead)
 				{
 					if (tAction.Type != CombatActionType.Defended)
@@ -320,16 +314,16 @@ namespace Aura.Channel.Skills.Combat
 					if (cap.MaxHits != cap.Hit)
 						aAction.Options &= ~AttackerOptions.DualWield;
 
-					
+
 				}
-				else if(tAction.Type == CombatActionType.Defended)
+				else if (tAction.Type == CombatActionType.Defended)
 				{
 					// Remove dual wield option if last hit doesn't come from
 					// the second weapon.
 					if (cap.MaxHits != cap.Hit)
 						aAction.Options &= ~AttackerOptions.DualWield;
 				}
-		
+
 
 				// Set stun time
 				if (tAction.Type != CombatActionType.Defended)
@@ -347,18 +341,9 @@ namespace Aura.Channel.Skills.Combat
 						tAction.Stun = GetTargetStun(attacker, weapon, tAction.IsKnockBack);
 					}
 
-					if(target.IsDead && skill.Info.Id != SkillId.FinalHit)
+					if (target.IsDead && skill.Info.Id != SkillId.FinalHit)
 					{
 						attacker.AttackDelayTime = DateTime.Now.AddMilliseconds(GetAttackerStun(attacker, weapon, true));
-                    }
-
-					if ((TargetOptions.KnockDown & tAction.Options) != 0)
-					{
-						//Timer for getting back up.
-						System.Timers.Timer getUpTimer = new System.Timers.Timer(AuraData.FeaturesDb.IsEnabled("CombatSystemRenewal") && target.IsCharacter && tAction.Stun > 2000 ? 2000 : tAction.Stun);
-
-						getUpTimer.Elapsed += (sender, e) => { if (target != null) { target.GetBackUp(sender, e, getUpTimer); } };
-						getUpTimer.Enabled = true;
 					}
 				}
 
@@ -381,39 +366,16 @@ namespace Aura.Channel.Skills.Combat
 							TargetAction tSplashAction = new TargetAction(CombatActionType.TakeHit, splashTarget, attacker, skill.Info.Id);
 
 							// Base damage
-							var damageSplash = (i == 1 ? attacker.GetRndRightHandDamage() : attacker.GetRndLeftHandDamage());
+							float damageSplash;
 							if (lowStamina)
 							{
 								damageSplash = attacker.GetRndBareHandDamage();
 							}
-
-							//Splash Damage Reduction
-							damageSplash *= weapon != null ? weapon.Data.SplashDamage : 0f;
-							if (damageSplash <= 0f)
-								damageSplash = 1f;
-
-							// Critical Hit
-							if (critSkill != null && tAction.Has(TargetOptions.Critical))
+							else
 							{
-								// Add crit bonus
-								var bonus = critSkill.RankData.Var1 / 100f;
-								damageSplash = damageSplash + (damageSplash * bonus);
-
-								// Set splashTarget option
-								tSplashAction.Set(TargetOptions.Critical);
-							}
-
-							var maxDamageSplash = damage; //Damage without Defense and Protection
-							// Subtract splashTarget def/prot
-							SkillHelper.HandleDefenseProtection(splashTarget, ref damageSplash);
-
-							// Defense
-							Defense.Handle(aAction, tSplashAction, ref damageSplash);
-
-							// Mana Shield
-							ManaShield.Handle(splashTarget, ref damageSplash, tSplashAction, maxDamageSplash);
-
-							
+								damageSplash = (i == 1 ? attacker.GetRndRightHandDamage() : attacker.GetRndLeftHandDamage());
+                            }
+							attacker.CalculateSplashDamage(splashTarget, ref damageSplash, skill, critSkill, aAction, tAction, tSplashAction, weapon);
 
 							// Deal with it!
 							if (damageSplash > 0)
@@ -421,7 +383,6 @@ namespace Aura.Channel.Skills.Combat
 
 							// Alert
 							splashTarget.Aggro(attacker, true);
-							
 
 							// Evaluate caused damage
 							if (!splashTarget.IsDead)
@@ -480,17 +441,8 @@ namespace Aura.Channel.Skills.Combat
 									else
 										tSplashAction.Stun = GetTargetStun(attacker, weapon, tSplashAction.IsKnockBack);
 								}
-								if ((TargetOptions.KnockDown & tSplashAction.Options) != 0)
-								{
-									//Timer for getting back up.
-									System.Timers.Timer getUpTimer = new System.Timers.Timer(tSplashAction.Stun - 1000);
-
-									getUpTimer.Elapsed += (sender, e) => splashTarget.GetBackUp(sender, e, getUpTimer);
-									getUpTimer.Enabled = true;
-								}
 							}
-							
-							
+
 							cap.Add(tSplashAction);
 						}
 
